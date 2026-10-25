@@ -1,0 +1,56 @@
+Corner Kick - English source text for machine translation (Google Play store listing)
+
+This version uses short, plain sentences without idioms or slang, so that automatic translation
+into other languages stays accurate. Keep the game name "Corner Kick" untranslated.
+
+[App name] (max 30 characters)
+Corner Kick: Set Piece Hero
+
+[Short description] (max 80 characters)
+Kick the ball from the corner. Then score with a header. A 3D soccer game.
+
+[Full description] (max 4000 characters)
+You play soccer in a stadium at night. Your team has a corner kick. Many players wait in front of the goal.
+Kick the ball from the corner. Then hit the ball with your head and score a goal. There are 10 corner kicks in one game. How many goals can you score?
+
+■ PLAYER A: TAKE THE CORNER KICK
+• Your player (number 10) kicks the ball from the left corner or the right corner.
+• Use the round controller to choose where the ball will land. A yellow ring shows the spot.
+• Hold the KICK button to kick the ball higher. A short press makes a fast, low ball. A long press makes a high ball.
+• The ball curves toward the goal.
+
+■ PLAYER B: MEET THE BALL
+• After the kick, you control the teammate who is closest to the landing spot.
+• Use the round controller and the DASH button to run to the ball.
+• For a high ball, press JUMP. Your player hits the ball with his head.
+• For a low ball, slide forward, left or right. Your player hits the ball with his foot.
+• Good timing makes a fast and accurate shot. The shot goes to the side away from the goalkeeper.
+
+■ THE OTHER TEAM DEFENDS
+• One defender always stays close to your number 9. Pass the ball to another teammate to get away from him.
+• A defender near the goal clears low balls.
+• If the ball comes too close to the goal, the goalkeeper catches it.
+• The goalkeeper jumps to stop your shots. Aim for the corners of the goal.
+
+■ 3D VIEW
+• You see the game from behind your player.
+• The stadium is full of fans. You see the goal, the net and both teams.
+• The game shows the moment you hit the ball in slow motion.
+• A small map shows the players and the ball.
+
+■ CHEERS AND FIREWORKS
+• The fans play drums and clap. They get louder when the ball comes near the goal.
+• When you score a goal, the fans cheer and there are fireworks.
+• Headers and shots into the corners give more points. After every 3 goals in a row, you get more fireworks.
+
+■ EASY CONTROLS
+• Turn on NAV for help. It shows the path of the ball, where to meet it, and when to press the button.
+
+■ FEATURES
+• Ranks from "Sunday League" to "King of the Header".
+• Share your score and rank with your friends. The message shows if NAV was on or off.
+• If you miss a corner kick, you can watch an ad and try the same corner kick again. You can do this up to 5 times in one game.
+• You can play without an internet connection. Ads and sharing need a connection.
+• The game is in English and Japanese.
+
+Start the game. Can you score from all 10 corner kicks?
