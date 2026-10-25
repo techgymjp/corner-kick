@@ -75,15 +75,15 @@
   const RING = { x: 125, y: 510, r: 95, dead: 14 };
   // 右側のボタン
   //   選手A: act1(高く)・act2(低く)
-  //   選手B: 前・左・右(スライディング)・ジャンプ・ダッシュ(ジャッカルのタックルボタンと同じ並び)
+  //   選手B: 前・左・右(スライディング)・ダッシュをひし形に並べ、真ん中にジャンプ(どれにも親指を少し動かすだけで届く)
   const BTN = {
-    act1: { x: 785, y: 385, r: 46, key: 'I' },
-    act2: { x: 695, y: 470, r: 46, key: 'J' },
-    front: { x: 785, y: 385, r: 46, key: 'I' },
-    left: { x: 695, y: 470, r: 46, key: 'J' },
-    right: { x: 875, y: 470, r: 46, key: 'L' },
-    jump: { x: 600, y: 565, r: 50, key: 'Space' },
-    dash: { x: 785, y: 575, r: 50, key: 'Shift' },
+    act1: { x: 785, y: 360, r: 46, key: 'I' },
+    act2: { x: 680, y: 465, r: 46, key: 'J' },
+    front: { x: 785, y: 360, r: 46, key: 'I' },
+    left: { x: 680, y: 465, r: 46, key: 'J' },
+    right: { x: 890, y: 465, r: 46, key: 'L' },
+    jump: { x: 785, y: 465, r: 42, key: 'Space' },
+    dash: { x: 785, y: 570, r: 46, key: 'Shift' },
   };
   const MUTE = { x: 596, y: 36, r: 20 };
   const NAVBTN = { x: 660, y: 36, w: 76, h: 30 };
@@ -1750,16 +1750,16 @@
     if (isTouch) {
       Object.assign(RING, { x: 168, y: 478, r: 122, dead: 16 });
       const cx = W - 232;
-      for (const [k, x, y, r] of [['front', cx, 318, 66], ['left', cx - 142, 456, 66], ['right', cx + 142, 456, 66], ['dash', cx, 580, 54], ['jump', cx - 290, 565, 62]]) Object.assign(BTN[k], { x, y, r });
-      Object.assign(BTN.act1, { x: cx, y: 318, r: 70 });
-      Object.assign(BTN.act2, { x: cx - 142, y: 456, r: 70 });
+      for (const [k, x, y, r] of [['front', cx, 300, 62], ['left', cx - 150, 445, 62], ['right', cx + 150, 445, 62], ['jump', cx, 445, 60], ['dash', cx, 585, 52]]) Object.assign(BTN[k], { x, y, r });
+      Object.assign(BTN.act1, { x: cx, y: 300, r: 70 });
+      Object.assign(BTN.act2, { x: cx - 150, y: 445, r: 70 });
       Object.assign(MUTE, { y: 42, r: 27 });
       Object.assign(NAVBTN, { y: 42, w: 104, h: 42 });
       MUTE.x = W / 2 + 90;
       NAVBTN.x = MUTE.x + 92;
     } else {
       const cx = W - 175;
-      BTN.act1.x = BTN.front.x = BTN.dash.x = cx; BTN.act2.x = BTN.left.x = cx - 92; BTN.right.x = cx + 92; BTN.jump.x = cx - 200;
+      BTN.act1.x = BTN.front.x = BTN.jump.x = BTN.dash.x = cx; BTN.act2.x = BTN.left.x = cx - 105; BTN.right.x = cx + 105;
       MUTE.x = W / 2 + 140;
       NAVBTN.x = MUTE.x + 64;
     }
