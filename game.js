@@ -1109,6 +1109,14 @@
     }
   }
 
+  // 見上げすぎて地面の点 L(落下地点)が画面の下から外れないよう、カメラの上向きの角度を抑える
+  const HALF_FOV = 31 * Math.PI / 180; // scene3d.js のカメラの縦の画角の半分
+  function keepGround(pitch, P, F, back, h, L) {
+    if (!L) return pitch;
+    const d = Math.hypot(L.x - (P.x - F.x * back), L.y - (P.y - F.y * back));
+    return Math.min(pitch, Math.atan2(-h, d) + HALF_FOV - 0.12);
+  }
+
   function updateView() {
     const a = state.actors, p = state.play;
     const useB = controllingB();
@@ -1118,10 +1126,13 @@
       back = 6.6; h = 3.9; pitch = -0.13; turn = state.phase === 'slow' || state.phase === 'shot' ? 2.2 : 2.5;
       const b = state.ball;
       if (state.phase === 'meet' && !b.touched) {
-        // 飛んでくるボールを画面に入れる: 少しボールのほうへ向き、高いボールは見上げる
+        // 飛んでくるボールを画面に入れる: 少しボールのほうへ向き、高いボールは少し引いて見上げる。
+        // ただし落下地点(緑の輪)は画面に残す
+        back += clamp((b.z - 4) / 6, 0, 1) * 3.4;
         const d = norm(b.x - P.x, b.y - P.y), hd = Math.hypot(b.x - P.x, b.y - P.y) + back;
         F = norm(F.x * 0.65 + d.x * 0.35, F.y * 0.65 + d.y * 0.35);
         pitch = clamp(Math.atan2(b.z - h, hd) * 0.8 + 0.02, -0.13, 0.45);
+        pitch = Math.max(-0.13, keepGround(pitch, P, F, back, h, state.meet || p.landing));
       }
       if (state.phase === 'result' && state.lastResult && state.lastResult.ok && state.phaseT > 0.6) pitch = 0.17;
     } else if (state.phase === 'cross' || state.phase === 'kicking') {
@@ -1129,6 +1140,7 @@
       // 高く上がったボールを見上げる
       const b = state.ball, hd = Math.hypot(b.x - P.x, b.y - P.y) + back;
       pitch = clamp(Math.atan2(b.z - h, hd) * 0.7, -0.07, 0.4);
+      pitch = Math.max(-0.07, keepGround(pitch, P, F, back, h, p.landing));
     } else if (state.phase === 'result') {
       // 選手A のまま終わった(直接ゴール・キーパー・クリア)ときはボールを見る
       const d = norm(state.ball.x - P.x, state.ball.y - P.y);
@@ -1378,6 +1390,25 @@
     }
   }
 
+  // ボールが画面の上にはみ出したら、上の端に矢印と高さを出す
+  function drawBallMarker() {
+    const b = state.ball;
+    if (!b || b.holder || (state.phase !== 'cross' && state.phase !== 'meet')) return;
+    const s = Scene3D.project(b.x, b.y, b.z);
+    if (s.behind || s.y > 8) return;
+    const x = clamp(s.x, 40, W - 40), y = 64;
+    ctx.save();
+    ctx.fillStyle = 'rgba(0,0,0,0.55)';
+    ctx.beginPath(); ctx.arc(x, y + 6, 24, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffe14d';
+    ctx.beginPath(); ctx.moveTo(x, y - 22); ctx.lineTo(x - 12, y - 6); ctx.lineTo(x + 12, y - 6); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(Math.round(b.z) + 'm', x, y + 12);
+    ctx.restore();
+  }
+
   function drawPopups() {
     ctx.textAlign = 'center';
     let line = 0;
@@ -1601,6 +1632,7 @@
     ctx.clearRect(0, 0, W, H);
     if (state.phase !== 'title') {
       drawPath();
+      drawBallMarker();
       drawMinimap();
       drawHUD();
       drawControls();
