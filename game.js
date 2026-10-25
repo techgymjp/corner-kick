@@ -1331,13 +1331,13 @@
     ctx.restore();
   }
 
-  // キックの高さのゲージ(キックボタンの右に縦長。長押しするほど上がる)
+  // キックの高さのゲージ(キックボタンの左に縦長。右手の親指で隠れないように。長押しするほど上がる)
   function drawGauge() {
     if (state.phase !== 'aim' && state.phase !== 'kicking' && state.phase !== 'ready') return;
     const g = state.charge ? state.charge.g : state.phase === 'kicking' ? state.play.kick.g : 0;
     const bt = BTN.act1;
     const w = isTouch ? 30 : 22, h = isTouch ? 250 : 190;
-    const x = Math.min(W - w - 14, bt.x + bt.r + (isTouch ? 46 : 34)), y = bt.y - h / 2;
+    const x = bt.x - bt.r - (isTouch ? 46 : 34) - w, y = bt.y - h / 2;
     ctx.save();
     ctx.globalAlpha = state.phase === 'ready' ? 0.4 : 1;
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
