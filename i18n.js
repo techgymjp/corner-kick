@@ -62,7 +62,7 @@ window.I18N = (() => {
       'streak': '{n} 連続ゴール!',
 
       'rank.0': '草サッカー', 'rank.1': '控えフォワード', 'rank.2': 'スタメン',
-      'rank.3': 'セットプレーの名手', 'rank.4': '代表のエースストライカー', 'rank.5': '伝説のヘディング王',
+      'rank.3': 'セットプレーの名手', 'rank.4': '代表のエースストライカー', 'rank.5': '伝説のゴールハンター',
 
       'over.title': '試合終了',
       'over.goals': '{c} / {t} ゴール',
@@ -154,7 +154,7 @@ window.I18N = (() => {
       'streak': '{n} goals in a row!',
 
       'rank.0': 'Sunday League', 'rank.1': 'Bench Striker', 'rank.2': 'Starting XI',
-      'rank.3': 'Set-piece Specialist', 'rank.4': 'International No.9', 'rank.5': 'King of the Header',
+      'rank.3': 'Set-piece Specialist', 'rank.4': 'International No.9', 'rank.5': 'Legendary Goal Hunter',
 
       'over.title': 'FULL TIME',
       'over.goals': '{c} / {t} goals',
