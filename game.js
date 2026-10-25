@@ -27,7 +27,7 @@
   // キックのあとに選手B になれる味方と背番号(scene3d.js の ROSTER と同じ)
   const NUMS = { B: '9', m1: '4', m2: '5', m3: '11' };
   // キックの高さ(ゲージ 0〜1): 0 = 速くて低いライナー、1 = ふわりと高いボール。滞空時間と曲がり方を決める
-  const KICK_LOW = { T: 1.15, curl: 4.6 }, KICK_HIGH = { T: 2.2, curl: 3.0 };
+  const KICK_LOW = { T: 1.15, curl: 4.6 }, KICK_HIGH = { T: 3.1, curl: 2.6 }; // 一番高いと頂点は 12m ほど
   const GAUGE_T = 1.2;                         // ゲージが一番上まで上がる時間(長押しするほど高く)
   const AIM_LIMIT = 12;
   const SLOW_T = 0.32, SLOW_K = 0.3;           // ボールに合わせた瞬間のスローモーション(実時間・倍率)
@@ -445,7 +445,7 @@
   // ボールが蹴られた時点の軌道から、各ディフェンダー・キーパーが競りに行く場所を決める
   function planDefence() {
     const p = state.play, a = state.actors;
-    const path = predictPath(state.ball, 3.2);
+    const path = predictPath(state.ball, 3.6);
     p.path = path;
     for (const k of ['d1', 'd3', 'd4', 'd5']) {
       const d = a[k];
@@ -1092,12 +1092,12 @@
       const from = { x: b.x, y: b.y, z: R, ax: 0, ay: 0 };
       // ためている高さの軌道。ためる前は一番低いのと一番高いのを薄く出す
       const gs = state.charge ? [state.charge.g] : [0, 1];
-      state.path = gs.map((g) => predictPath(Object.assign({}, from, kickVelocity(from, state.target, g)), 2.4));
+      state.path = gs.map((g) => predictPath(Object.assign({}, from, kickVelocity(from, state.target, g)), 3.4));
     } else state.path = null;
     // 頭で合わせられる場所(落ちてくるボールが頭の高さを通るところ)。低いボールは足で合わせるところ
     state.meet = null;
     if ((state.phase === 'cross' || state.phase === 'meet') && !b.touched && !b.holder) {
-      const path = predictPath(b, 2.5);
+      const path = predictPath(b, 3.5);
       for (const q of path) {
         if (q.vz < 0 && q.z <= 2.25) { state.meet = { x: q.x, y: q.y, t: (state.kickT || 0) + q.t, z: q.z }; break; }
       }
@@ -1121,11 +1121,14 @@
         // 飛んでくるボールを画面に入れる: 少しボールのほうへ向き、高いボールは見上げる
         const d = norm(b.x - P.x, b.y - P.y), hd = Math.hypot(b.x - P.x, b.y - P.y) + back;
         F = norm(F.x * 0.65 + d.x * 0.35, F.y * 0.65 + d.y * 0.35);
-        pitch = clamp(Math.atan2(b.z - h, hd) * 0.8 + 0.02, -0.13, 0.32);
+        pitch = clamp(Math.atan2(b.z - h, hd) * 0.8 + 0.02, -0.13, 0.45);
       }
       if (state.phase === 'result' && state.lastResult && state.lastResult.ok && state.phaseT > 0.6) pitch = 0.17;
     } else if (state.phase === 'cross' || state.phase === 'kicking') {
       turn = 2;
+      // 高く上がったボールを見上げる
+      const b = state.ball, hd = Math.hypot(b.x - P.x, b.y - P.y) + back;
+      pitch = clamp(Math.atan2(b.z - h, hd) * 0.7, -0.07, 0.4);
     } else if (state.phase === 'result') {
       // 選手A のまま終わった(直接ゴール・キーパー・クリア)ときはボールを見る
       const d = norm(state.ball.x - P.x, state.ball.y - P.y);
