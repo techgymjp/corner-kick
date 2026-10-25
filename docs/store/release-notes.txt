@@ -10,11 +10,11 @@
 </ja-JP>
 <en-US>
 Corner Kick is here!
-• A 3D football game: whip in corners and finish with headers or slides
+• A 3D football game: whip in corners, finish with headers or slides
 • Pick the landing spot with the direction ring; hold KICK longer for a higher ball
 • After the kick you control the teammate nearest the landing spot
 • JUMP for high balls, SLIDE forward, left or right for low ones
-• Score from as many of 10 corners as you can. Cheers and fireworks for every goal
+• 10 corners per game. Cheers and fireworks for every goal
 • Missed a corner? Watch an ad to take it again (up to 5 times per game)
 • NAV help, ranks, score sharing, English and Japanese
 </en-US>
