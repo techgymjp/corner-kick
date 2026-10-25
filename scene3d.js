@@ -720,13 +720,25 @@ window.Scene3D = (() => {
         break;
       }
       case 'head': { // ジャンプしてヘディング
-        const t = p.t, jt = Math.min(1, t / 0.55);
+        const T = p.jumpT || 0.55, t = p.t * 0.55 / T, jt = Math.min(1, p.t / T);
         b.position.y = (p.jump || 0.75) * Math.sin(Math.PI * jt);
         u.rotation.x = t < 0.22 ? -0.4 * ease(t / 0.22) : -0.4 + 1.0 * ease((t - 0.22) / 0.12);
         r.armL.rotation.x = -0.9; r.armR.rotation.x = -0.9;
         r.armL.rotation.z = 0.5; r.armR.rotation.z = -0.5;
         r.legL.rotation.x = -0.5 * Math.sin(Math.PI * jt); r.legR.rotation.x = 0.3 * Math.sin(Math.PI * jt);
         shadowScale = 1 - 0.3 * Math.sin(Math.PI * jt);
+        break;
+      }
+      case 'slide': { // スライディング: 後ろに倒れながら足を前に投げ出す
+        const k = ease(p.t / 0.15) * (1 - ease((p.t - 0.6) / 0.3));
+        b.rotation.x = -1.2 * k;
+        b.position.y = 0.12 * k;
+        r.legR.rotation.x = -0.35 * k;
+        r.legL.rotation.x = 0.9 * k;
+        r.armL.rotation.x = -0.6 * k; r.armL.rotation.z = 0.9 * k;
+        r.armR.rotation.x = -0.6 * k; r.armR.rotation.z = -0.9 * k;
+        u.rotation.x = 0.5 * k;
+        shadowScale = 1 + 0.7 * k;
         break;
       }
       case 'dive': { // キーパーが横っ飛び
@@ -805,7 +817,7 @@ window.Scene3D = (() => {
     ballMesh.visible = !!ball;
     ballShadow.visible = !!ball;
     if (!ball) return;
-    const holder = ball.holder && rigs[ball.holder];
+    const holder = ball.holder && rigs[(state.rigOf && state.rigOf[ball.holder]) || ball.holder];
     if (holder && holder.root.visible) {
       holder.root.updateMatrixWorld(true);
       holder.hands.getWorldPosition(ballMesh.position);
@@ -843,10 +855,15 @@ window.Scene3D = (() => {
   function render(state, dt) {
     if (!ready) return;
     updateScreens(state);
-    for (const [k, r] of Object.entries(rigs)) {
-      const p = state.actors[k];
-      if (p) posePlayer(r, p, state.time); else { r.root.visible = r.shadow.visible = false; }
+    // state.rigOf: 選手B を入れ替えたとき、どの人形(背番号)で描くか
+    const used = new Set();
+    for (const [k, p] of Object.entries(state.actors)) {
+      const r = rigs[(state.rigOf && state.rigOf[k]) || k];
+      if (!r) continue;
+      posePlayer(r, p, state.time);
+      used.add(r);
     }
+    for (const r of Object.values(rigs)) if (!used.has(r)) r.root.visible = r.shadow.visible = false;
     placeBall(state);
     updateGuides(state);
     updateFireworks(dt);

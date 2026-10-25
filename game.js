@@ -3,7 +3,8 @@
 // 座標系: ピッチの中心が原点、x がタッチライン方向(右が +)、y がゴール方向(攻めるゴールは y = +52.5)、z が高さ。単位はメートル。
 // 1 プレーは 2 段階:
 //   1. 選手A(キッカー)が左右どちらかのコーナーから蹴る。方角リングで落下地点を決め、「高く」「低く」を長押ししてゲージをため、離してキック
-//   2. キックすると選手B に切り替わる。方角リングとダッシュで走り込み、「ヘディング」か「シュート」でボールに合わせてゴールを狙う
+//   2. キックすると、落下地点に一番近い味方(選手B)に切り替わる。方角リングとダッシュで走り込み、
+//      高いボールは「ジャンプ」でヘディング、低いボールは「前・左・右」のスライディングで合わせてゴールを狙う
 // 質感と操作感は techgymjp/jackal(ジャッカル)と同じ作り。
 (() => {
   // ---------- 定数 ----------
@@ -15,11 +16,16 @@
   const TOTAL = 10;
   const G = 9.8, R = 0.15; // 重力・ボールの半径(表示に合わせて少し大きめ)
 
-  const WALK = 6.0, DASH = 8.8, ACC = 30;
-  const STAMINA_MAX = 4.0, STAMINA_REGEN = 0.6;
+  // 選手B の走り(techgymjp/jackal の選手A・選手B と同じ速さ・スタミナ)
+  const WALK = 6.0, DASH = 8.8, ACC = 26;
+  const STAMINA_MAX = 6.0, STAMINA_REGEN = 0.5;
   const HEAD_Z = 1.72;                         // 立っているときの頭の高さ
-  const JUMP = 0.75, HEAD_T = 0.6;             // ヘディングのジャンプの高さ・長さ
-  const KICK_T = 0.5;
+  const HEAD_T = 0.6;                          // 相手 DF のヘディングの長さ
+  // 選手B の動き: ジャンプ(頭に来たボールはヘディング)の高さと時間、スライディング(足に当たればシュート)の速さと時間
+  const LEAP = { jump: 0.9, t: 0.65 };
+  const KICK_T = 0.5, SLIDE_T = 0.9, SLIDE_V = 7.5;
+  // キックのあとに選手B になれる味方と背番号(scene3d.js の ROSTER と同じ)
+  const NUMS = { B: '9', m1: '4', m2: '5', m3: '11' };
   const KICK_TYPES = { high: { T: 1.95, curl: 3.2 }, low: { T: 1.35, curl: 4.2 } };
   const SWEET = 0.78, SWEET_W = 0.075;         // キックのゲージの「ちょうどいい」ところ
   const GAUGE_T = 0.9;                         // ゲージが満タンになるまでの時間
@@ -67,23 +73,35 @@
   let botHold = null;
 
   const RING = { x: 125, y: 510, r: 95, dead: 14 };
-  // 右側のボタン: act1(高く / ヘディング)・act2(低く / シュート)・ダッシュ
+  // 右側のボタン
+  //   選手A: act1(高く)・act2(低く)
+  //   選手B: 前・左・右(スライディング)・ジャンプ・ダッシュ(ジャッカルのタックルボタンと同じ並び)
   const BTN = {
-    act1: { x: 785, y: 395, r: 50, key: 'I' },
-    act2: { x: 690, y: 500, r: 46, key: 'J' },
-    dash: { x: 860, y: 560, r: 46, key: 'Shift' },
+    act1: { x: 785, y: 385, r: 46, key: 'I' },
+    act2: { x: 695, y: 470, r: 46, key: 'J' },
+    front: { x: 785, y: 385, r: 46, key: 'I' },
+    left: { x: 695, y: 470, r: 46, key: 'J' },
+    right: { x: 875, y: 470, r: 46, key: 'L' },
+    jump: { x: 600, y: 565, r: 50, key: 'Space' },
+    dash: { x: 785, y: 575, r: 50, key: 'Shift' },
   };
   const MUTE = { x: 596, y: 36, r: 20 };
   const NAVBTN = { x: 660, y: 36, w: 76, h: 30 };
-  const pointers = new Map(); // pointerId -> 'ring' | 'act1' | 'act2' | 'dash' | 'none'
+  const pointers = new Map(); // pointerId -> 'ring' | ボタンの名前 | 'none'
   const ringInput = { active: false, mx: 0, my: 0 };
 
   window.addEventListener('keydown', (e) => {
     audio();
     const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
     if (!keys.has(k)) {
-      if (k === 'i' || k === 'k') pressed.act = 'act1';
-      if (k === 'j' || k === 'l') pressed.act = 'act2';
+      // 選手A: I 高く / J 低く。選手B: I・J・L 前・左・右スライディング / Space・U ジャンプ
+      if (controllingB()) {
+        const act = { i: 'front', k: 'front', j: 'left', l: 'right', ' ': 'jump', u: 'jump' }[k];
+        if (act) pressed.act = act;
+      } else {
+        if (k === 'i') pressed.act = 'act1';
+        if (k === 'j') pressed.act = 'act2';
+      }
       if (k === ' ' || k === 'Enter') pressed.start = true;
       if (k === 'p' || k === 'Escape') togglePause();
       if (k === 'm') Sound.setMuted(!Sound.muted);
@@ -100,8 +118,8 @@
   // ボタンを押し続けているか(キックのゲージ用)
   function isHeld(name) {
     if (bot) return botHold === name;
-    if (name === 'act1' && (keys.has('i') || keys.has('k'))) return true;
-    if (name === 'act2' && (keys.has('j') || keys.has('l'))) return true;
+    if (name === 'act1' && keys.has('i')) return true;
+    if (name === 'act2' && keys.has('j')) return true;
     for (const v of pointers.values()) if (v === name) return true;
     return false;
   }
@@ -116,7 +134,7 @@
   }
   function buttonsShown() {
     if (state.phase === 'ready' || state.phase === 'aim' || state.phase === 'kicking') return ['act1', 'act2'];
-    if (controllingB()) return ['act1', 'act2', 'dash'];
+    if (controllingB()) return ['front', 'left', 'right', 'jump', 'dash'];
     return [];
   }
 
@@ -184,6 +202,12 @@
   canvas.addEventListener('pointerup', releasePointer);
   canvas.addEventListener('pointercancel', releasePointer);
 
+  // カメラ基準の方向(前・右・左)をワールドの向きへ
+  function dirOf(name, F) {
+    if (name === 'front') return { x: F.x, y: F.y };
+    if (name === 'right') return { x: F.y, y: -F.x };
+    return { x: -F.y, y: F.x };
+  }
   function toWorld(mx, my, F) {
     // 画面の右 = 前方を時計回りに90°回した方向
     return { x: my * F.x + mx * F.y, y: my * F.y - mx * F.x };
@@ -209,7 +233,7 @@
     } else if (ringInput.active) {
       mx = ringInput.mx; my = ringInput.my;
     }
-    let dash = keys.has('Shift') || keys.has(' ') || keys.has('c');
+    let dash = keys.has('Shift') || keys.has('c');
     for (const v of pointers.values()) if (v === 'dash') dash = true;
     // 画面に映っている向き(カメラの向き)基準
     const w = toWorld(mx, my, Scene3D.camF);
@@ -278,6 +302,8 @@
     state.strike = null;
     state.shotPlan = null;
     state.kickT = 0;
+    state.rigOf = {}; // 選手B を入れ替えたときの 3D の人形の割り当て(state.actors のキー → 人形のキー)
+    p.markKey = 'B';  // 相手のマーカーがついている選手(背番号9)
     const s = p.side;
     const A = actor(s * (HX + 0.25), GL + 0.2, 0);
     const B = actor(p.bHome.x, p.bHome.y, 0, { stamina: STAMINA_MAX });
@@ -346,7 +372,7 @@
     const dashing = !!inp && inp.dash && mag > 0.1 && P.stamina > 0;
     P.dashing = dashing;
     const top = dashing ? DASH : WALK;
-    steer(P, mx * top, my * top, ACC, dt);
+    steer(P, mx * top, my * top, P.acc || ACC, dt);
     if (dashing) P.stamina = Math.max(0, P.stamina - dt);
     else P.stamina = Math.min(STAMINA_MAX, P.stamina + STAMINA_REGEN * dt);
   }
@@ -462,7 +488,7 @@
   }
 
   function updateDefenders(dt) {
-    const a = state.actors, p = state.play, b = state.ball, B = a.B;
+    const a = state.actors, p = state.play, b = state.ball, B = a[p.markKey] || a.B; // マーカーは背番号9についていく
     const flying = state.phase === 'cross' || state.phase === 'meet';
     const tk = state.phase === 'cross' || state.phase === 'meet' ? state.kickT : 0;
     const preKick = state.phase === 'ready' || state.phase === 'aim' || state.phase === 'kicking';
@@ -616,7 +642,7 @@
   }
 
   // ---------- 選手B ----------
-  // キックまでは自分でマークを外そうと動き回る。切り替え後は方角リングとダッシュで動かし、ボタンでヘディング・シュート
+  // キックまでは自分でマークを外そうと動き回る。切り替え後は方角リングとダッシュで動かし、ジャンプ・スライディング
   function updateB(B, inp, dt) {
     const p = state.play, b = state.ball;
     if (state.phase === 'ready' || state.phase === 'aim' || state.phase === 'cross') {
@@ -630,16 +656,19 @@
     }
     B.jostle = false;
     if (B.mode === 'head') {
-      // ジャンプ中は勢いが少し残る
+      // 跳んでいる間は勢いが少し残る
       const k = Math.exp(-2.5 * dt);
       B.vx *= k; B.vy *= k;
       integrate(B, dt, false);
-      if (B.t >= HEAD_T) setMode(B, 'run');
+      if (B.t >= B.jumpT + 0.05) setMode(B, 'run');
       return;
     }
-    if (B.mode === 'kick') {
-      stopAnim(B, dt, 5);
-      if (B.t >= KICK_T) setMode(B, 'run');
+    if (B.mode === 'slide') {
+      // 滑り込んで、勢いが落ちたら起き上がる
+      const k = Math.exp(-3 * dt);
+      B.vx *= k; B.vy *= k;
+      integrate(B, dt, false);
+      if (B.t >= SLIDE_T) setMode(B, 'run');
       return;
     }
     if (B.mode === 'celebrate' || B.mode === 'sad') { stopAnim(B, dt, 4); return; }
@@ -647,25 +676,37 @@
     integrate(B, dt);
     if (state.phase === 'meet' && Math.hypot(B.vx, B.vy) < 0.8) faceTo(B, b.x, b.y);
     if (state.phase === 'meet' && inp.act) {
-      if (inp.act === 'act1') { setMode(B, 'head'); B.jump = JUMP; Sound.bump(); }
-      else { setMode(B, 'kick'); faceTo(B, b.x + b.vx * 0.15, b.y + b.vy * 0.15); }
+      if (inp.act === 'jump') {
+        setMode(B, 'head'); B.jump = LEAP.jump; B.jumpT = LEAP.t;
+        if (Math.hypot(B.vx, B.vy) < 1) faceTo(B, b.x, b.y);
+        Sound.bump();
+      } else if (inp.act === 'front' || inp.act === 'left' || inp.act === 'right') {
+        // 画面の前・左・右へ滑り込む
+        const d = dirOf(inp.act, Scene3D.camF);
+        setMode(B, 'slide');
+        B.face = Math.atan2(d.x, d.y);
+        B.vx = d.x * SLIDE_V; B.vy = d.y * SLIDE_V;
+        Sound.bump();
+      }
     }
   }
 
   // 頭・足とボールの位置関係。合えば 0〜1 の「当たりの良さ」、合わなければ -1
   function headQuality(B, b, tt) {
-    if (tt < 0.06 || tt > 0.48) return -1;
-    const hz = HEAD_Z + JUMP * Math.sin(Math.PI * Math.min(1, tt / 0.55));
+    const jt = B.jumpT || LEAP.t;
+    if (tt < jt * 0.08 || tt > jt * 0.92) return -1;
+    const hz = HEAD_Z + (B.jump || LEAP.jump) * Math.sin(Math.PI * Math.min(1, tt / jt));
     const d = Math.hypot(b.x - B.x, b.y - B.y), dz = Math.abs(b.z - hz);
     if (d > 0.85 || dz > 0.5) return -1;
     return clamp(1 - (d / 0.85) * 0.6 - (dz / 0.5) * 0.4, 0, 1);
   }
-  function kickQuality(B, b, tt) {
-    if (tt < 0.08 || tt > 0.32) return -1;
-    const fx = B.x + Math.sin(B.face) * 0.45, fy = B.y + Math.cos(B.face) * 0.45;
+  // スライディング: 前に投げ出した足で、低いボール(腰の高さまで)に触る
+  function slideQuality(B, b, tt) {
+    if (tt < 0.05 || tt > 0.55) return -1;
+    const fx = B.x + Math.sin(B.face) * 0.85, fy = B.y + Math.cos(B.face) * 0.85;
     const d = Math.hypot(b.x - fx, b.y - fy);
-    if (d > 0.95 || b.z > 1.3) return -1;
-    return clamp(1 - (d / 0.95) * 0.7 - Math.max(0, b.z - 0.9) / 0.4 * 0.3, 0, 1);
+    if (d > 1.0 || b.z > 1.1) return -1;
+    return clamp(1 - d * 0.7 - Math.max(0, b.z - 0.5) / 0.6 * 0.3, 0, 1);
   }
 
   function checkStrike() {
@@ -674,9 +715,9 @@
     if (B.mode === 'head') {
       const q = headQuality(B, b, B.t);
       if (q >= 0) strike('head', q);
-    } else if (B.mode === 'kick') {
-      const q = kickQuality(B, b, B.t);
-      if (q >= 0) strike(b.z > 0.45 ? 'volley' : 'shot', q);
+    } else if (B.mode === 'slide') {
+      const q = slideQuality(B, b, B.t);
+      if (q >= 0) strike('slide', q);
     }
   }
 
@@ -688,20 +729,21 @@
     const roomR = GOAL_W - gk.x, roomL = GOAL_W + gk.x;
     const aimed = Math.abs(input.sx) >= 0.7 && Math.abs(input.sy) < 0.5;
     const side = aimed ? (input.mx > 0 ? 1 : -1) : (roomR > roomL ? 1 : -1);
-    const tx = side * 2.6, tz = kind === 'head' ? 0.7 : 0.8;
+    const isHead = kind === 'head';
+    const tx = side * 2.6, tz = isHead ? 0.7 : 0.8;
     const dist = Math.hypot(tx - b.x, GL - b.y);
     const spread = (0.2 + (1 - q) * 1.1) * clamp(dist / 10, 0.7, 2.2);
     const cx = tx + gauss() * spread;
-    let cz = tz + gauss() * spread * 0.5 + (1 - q) * (kind === 'head' ? 0.35 : 0.6);
+    let cz = tz + gauss() * spread * 0.5 + (1 - q) * (isHead ? 0.35 : 0.6);
     cz = Math.max(R, cz);
-    const speed = kind === 'head' ? 13 + 6 * q : kind === 'volley' ? 19 + 7 * q : 17 + 6 * q;
+    const speed = isHead ? 13 + 6 * q : 17 + 6 * q;
     const T = dist / speed;
     b.vx = (cx - b.x) / T; b.vy = (GL - b.y) / T; b.vz = (cz - b.z + 0.5 * G * T * T) / T;
     state.strike = { kind, q, x: B.x, y: B.y };
     state.strikeT = 0;
     state.shotPlan = planSave(cx, cz, T);
-    if (kind === 'head') Sound.header(); else Sound.kick(1);
-    B.face = Math.atan2(cx - B.x, GL - B.y);
+    if (isHead) Sound.header(); else Sound.kick(1);
+    if (kind !== 'slide') B.face = Math.atan2(cx - B.x, GL - B.y);
     state.camF = norm(cx - B.x, GL - B.y);
     state.phase = 'slow';
     state.phaseT = 0;
@@ -775,7 +817,7 @@
     state.streak++;
     state.bestStreak = Math.max(state.bestStreak, state.streak);
     const corner = s && Math.abs(s.cx) > 2.6 && kind !== 'direct';
-    let pts = 1000 + ({ head: 300, volley: 200, shot: 100, direct: 1500 })[kind] + (corner ? 200 : 0) + Math.min(state.streak - 1, 5) * 100;
+    let pts = 1000 + ({ head: 300, slide: 200, direct: 1500 })[kind] + (corner ? 200 : 0) + Math.min(state.streak - 1, 5) * 100;
     if (state.strike) pts += Math.round(state.strike.q * 200);
     state.score += pts;
     state.lastResult = { ok: true, kind };
@@ -997,35 +1039,62 @@
   }
 
   // 選手B に切り替え
+  // 落下地点に一番近い味方を選手B にする(背番号9 以外なら、state.actors の B と入れ替える)
+  function pickReceiver() {
+    const p = state.play, a = state.actors, L = p.landing;
+    let best = 'B', bd = Infinity;
+    for (const k of Object.keys(NUMS)) {
+      const d = Math.hypot(a[k].x - L.x, a[k].y - L.y);
+      if (d < bd) { bd = d; best = k; }
+    }
+    if (best !== 'B') {
+      const oldB = a.B, nb = a[best];
+      a.B = nb; a[best] = oldB;
+      oldB.home = { x: oldB.x, y: oldB.y };
+      oldB.jostle = false;
+      if (oldB.mode !== 'run') setMode(oldB, 'run');
+      if (nb.mode !== 'run') setMode(nb, 'run');
+      state.rigOf = { B: best, [best]: 'B' };
+      p.markKey = best;
+    }
+    p.bNum = NUMS[state.rigOf.B || 'B'];
+  }
+
   function startMeet() {
+    pickReceiver();
     const p = state.play, B = state.actors.B;
     state.phase = 'meet';
     state.phaseT = 0;
     p.switched = true;
     B.stamina = STAMINA_MAX;
-    B.vx *= 0.3; B.vy *= 0.3;
+    // ジャッカルの選手B と同じく、切り替えた瞬間にカーソルを倒した向きへすぐ走り出せるようにする
+    B.vx *= 0.25; B.vy *= 0.25;
+    B.acc = 48;
     // カメラ: ゴールの方向から少しコーナー側へ振って、飛んでくるボールが見えるようにする
     const g = norm(-B.x, GL - B.y), th = p.side * 0.62;
     state.camF = { x: g.x * Math.cos(th) + g.y * Math.sin(th), y: -g.x * Math.sin(th) + g.y * Math.cos(th) };
     state.viewCut = true;
     state.msg = { key: 'msg.meet', t: 0 };
-    popup(t('msg.switchBig'), '#ffe14d', 44, 0.05);
+    popup(t('msg.switchBig', { n: p.bNum }), '#ffe14d', 44, 0.05);
     Sound.whoosh();
   }
 
   // ナビ: キックの軌道、ボールに合わせる場所(緑の輪)、今ボタンを押せば当たる(オレンジの輪+ボタン点滅)
-  function wouldConnect(kind) {
+  // btn: 'jump'(ジャンプ)・'front' / 'left' / 'right'(スライディング)
+  function wouldConnect(btn) {
     const B = state.actors.B, b = state.ball;
     const q = { x: b.x, y: b.y, z: b.z, vx: b.vx, vy: b.vy, vz: b.vz };
-    const P = { x: B.x, y: B.y, face: Math.atan2(b.x + b.vx * 0.15 - B.x, b.y + b.vy * 0.15 - B.y) };
-    const k = Math.exp(-2.5 * 0.02);
-    let vx = B.vx, vy = B.vy;
-    for (let tt = 0; tt < 0.5; tt += 0.02) {
+    const P = { x: B.x, y: B.y, face: B.face, jump: LEAP.jump, jumpT: LEAP.t };
+    let vx = B.vx, vy = B.vy, k = Math.exp(-2.5 * 0.02), end = LEAP.t;
+    if (btn !== 'jump') {
+      const d = dirOf(btn, Scene3D.camF);
+      P.face = Math.atan2(d.x, d.y); vx = d.x * SLIDE_V; vy = d.y * SLIDE_V; k = Math.exp(-3 * 0.02); end = 0.56;
+    }
+    for (let tt = 0; tt < end; tt += 0.02) {
       q.vx += b.ax * 0.02; q.vy += b.ay * 0.02; q.vz -= G * 0.02;
       q.x += q.vx * 0.02; q.y += q.vy * 0.02; q.z = Math.max(R, q.z + q.vz * 0.02);
-      if (kind === 'head') { vx *= k; vy *= k; P.x += vx * 0.02; P.y += vy * 0.02; }
-      const qq = kind === 'head' ? headQuality(P, q, tt + 0.02) : kickQuality(P, q, tt + 0.02);
-      if (qq >= 0.25) return true;
+      vx *= k; vy *= k; P.x += vx * 0.02; P.y += vy * 0.02;
+      if ((btn === 'jump' ? headQuality : slideQuality)(P, q, tt + 0.02) >= 0.25) return true;
     }
     return false;
   }
@@ -1049,8 +1118,7 @@
       }
       if (state.nav && state.phase === 'meet' && state.meet) state.guide.meet = state.meet;
       if (state.nav && state.phase === 'meet' && state.actors.B.mode === 'run') {
-        if (wouldConnect('head')) state.hintBtn = 'act1';
-        else if (wouldConnect('kick')) state.hintBtn = 'act2';
+        state.hintBtn = ['jump', 'front', 'left', 'right'].find(wouldConnect) || null;
         if (state.hintBtn) state.guide.hit = { x: state.actors.B.x, y: state.actors.B.y };
       }
     }
@@ -1183,7 +1251,8 @@
 
   function btnLabel(name) {
     if (name === 'dash') return [t('btn.dash'), ''];
-    if (controllingB()) return [t(name === 'act1' ? 'btn.head' : 'btn.shoot'), ''];
+    if (name === 'jump') return [t('btn.jump'), ''];
+    if (controllingB()) return [t('btn.' + name), t('btn.slide')];
     return [t(name === 'act1' ? 'btn.high' : 'btn.low'), t('btn.kick')];
   }
 
@@ -1247,17 +1316,30 @@
         ctx.stroke();
         ctx.restore();
       }
+      // スライディングの方向の矢印
+      if (name === 'front' || name === 'left' || name === 'right') {
+        const ang = name === 'front' ? -Math.PI / 2 : name === 'left' ? Math.PI : 0;
+        ctx.save();
+        const ak = b.r / 46;
+        ctx.translate(b.x + Math.cos(ang) * (b.r - 11 * ak), b.y + Math.sin(ang) * (b.r - 11 * ak));
+        ctx.rotate(ang);
+        ctx.scale(ak, ak);
+        ctx.fillStyle = on ? '#222' : '#ffe14d';
+        ctx.beginPath(); ctx.moveTo(7, 0); ctx.lineTo(-5, -7); ctx.lineTo(-5, 7); ctx.closePath(); ctx.fill();
+        ctx.restore();
+      }
       const [l1, l2] = btnLabel(name);
       ctx.fillStyle = on ? '#222' : '#fff';
       ctx.textAlign = 'center';
       const fk = b.r / 46;
       if (l2) {
+        const dy = controllingB() ? -6 : 4; // 選手A のボタンは上にボールのアイコンがある
         ctx.font = `bold ${Math.round(18 * fk)}px sans-serif`;
-        ctx.fillText(l1, b.x, b.y + 4 * fk, b.r * 1.5);
-        ctx.font = `bold ${Math.round(11 * fk)}px sans-serif`;
-        ctx.fillText(l2, b.x, b.y + 19 * fk, b.r * 1.6);
+        ctx.fillText(l1, b.x, b.y + dy * fk, b.r * 1.5);
+        ctx.font = `bold ${Math.round(10 * fk)}px sans-serif`;
+        ctx.fillText(l2, b.x, b.y + (dy + 15) * fk, b.r * 1.6);
       } else {
-        ctx.font = `bold ${Math.round((name === 'act1' && controllingB() ? 14 : 15) * fk)}px sans-serif`;
+        ctx.font = `bold ${Math.round(14 * fk)}px sans-serif`;
         ctx.fillText(l1, b.x, b.y + 5 * fk, b.r * 1.7);
       }
       if (!isTouch) { ctx.font = '10px sans-serif'; ctx.fillText(b.key, b.x, b.y + b.r - 8); }
@@ -1667,17 +1749,17 @@
     // 右側のボタン類は右端に合わせる。スマホは指で押しやすいよう大きくする
     if (isTouch) {
       Object.assign(RING, { x: 168, y: 478, r: 122, dead: 16 });
-      const cx = W - 200;
-      Object.assign(BTN.act1, { x: cx, y: 330, r: 74 });
-      Object.assign(BTN.act2, { x: cx - 150, y: 488, r: 70 });
-      Object.assign(BTN.dash, { x: cx + 95, y: 520, r: 62 });
+      const cx = W - 232;
+      for (const [k, x, y, r] of [['front', cx, 318, 66], ['left', cx - 142, 456, 66], ['right', cx + 142, 456, 66], ['dash', cx, 580, 54], ['jump', cx - 290, 565, 62]]) Object.assign(BTN[k], { x, y, r });
+      Object.assign(BTN.act1, { x: cx, y: 318, r: 70 });
+      Object.assign(BTN.act2, { x: cx - 142, y: 456, r: 70 });
       Object.assign(MUTE, { y: 42, r: 27 });
       Object.assign(NAVBTN, { y: 42, w: 104, h: 42 });
       MUTE.x = W / 2 + 90;
       NAVBTN.x = MUTE.x + 92;
     } else {
       const cx = W - 175;
-      BTN.act1.x = cx; BTN.act2.x = cx - 95; BTN.dash.x = cx + 75;
+      BTN.act1.x = BTN.front.x = BTN.dash.x = cx; BTN.act2.x = BTN.left.x = cx - 92; BTN.right.x = cx + 92; BTN.jump.x = cx - 200;
       MUTE.x = W / 2 + 140;
       NAVBTN.x = MUTE.x + 64;
     }
@@ -1711,6 +1793,6 @@
     state, newGame, update, DT, TOTAL,
     setBot(fn) { bot = fn; },
     predictPath, kickVelocity,
-    consts: { HEAD_Z, JUMP, SWEET, SWEET_W, GAUGE_T, KICK_TYPES },
+    consts: { HEAD_Z, LEAP, SLIDE_V, SWEET, SWEET_W, GAUGE_T, KICK_TYPES },
   };
 })();
