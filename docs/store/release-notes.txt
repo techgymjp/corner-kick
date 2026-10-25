@@ -1,0 +1,20 @@
+<ja-JP>
+コーナーキック、配信開始！
+・コーナーから蹴って、ヘディングとスライディングで合わせるサッカーの3Dゲーム
+・落下地点は円形カーソル、ボールの高さは「キック」の長押しで決める
+・キックすると、落下地点に一番近い味方に切り替わる
+・高いボールは「ジャンプ」、低いボールは「前・左・右」のスライディング
+・全10本で何点取れるか挑戦。ゴールで大歓声と花火
+・外したコーナーキックは、広告を見てやり直せる（1ゲーム5回まで）
+・ナビ機能、称号、スコアのシェア、日本語・英語対応
+</ja-JP>
+<en-US>
+Corner Kick is here!
+• A 3D football game: whip in corners and finish with headers or slides
+• Pick the landing spot with the direction ring; hold KICK longer for a higher ball
+• After the kick you control the teammate nearest the landing spot
+• JUMP for high balls, SLIDE forward, left or right for low ones
+• Score from as many of 10 corners as you can. Cheers and fireworks for every goal
+• Missed a corner? Watch an ad to take it again (up to 5 times per game)
+• NAV help, ranks, score sharing, English and Japanese
+</en-US>

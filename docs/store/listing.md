@@ -92,6 +92,12 @@ Whip in the corner, then rise for the header! A 3D football set-piece game.
 
 ---
 
+## リリースノート
+
+`release-notes.txt` を Play Console の「リリースノート」欄にそのまま貼り付けてください（`<ja-JP>` `<en-US>` で言語を分けた形。各言語 500 文字以内）。
+
+---
+
 ## 画像（このフォルダ）
 
 | 用途 | ファイル | サイズ |
