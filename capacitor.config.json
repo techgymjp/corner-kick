@@ -1,0 +1,8 @@
+{
+  "appId": "jp.techgym.cornerkick",
+  "appName": "コーナーキック",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#0a0d1c"
+  }
+}
