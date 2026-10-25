@@ -103,7 +103,10 @@
         if (act) pressed.act = act;
       } else if (k === ' ' || k === 'i') pressed.act = 'act1';
       if (k === ' ' || k === 'Enter') pressed.start = true;
-      if (k === 'p' || k === 'Escape') togglePause();
+      // タイトル: H であそびかた / あそびかた: Esc・Backspace でタイトルへ
+      if (state.phase === 'title' && k === 'h') openHowto();
+      else if (state.phase === 'howto' && (k === 'Escape' || k === 'Backspace')) backFromHowto();
+      else if (k === 'p' || k === 'Escape') togglePause();
       if (k === 'm') Sound.setMuted(!Sound.muted);
       if (k === 'n') toggleNav();
     }
@@ -173,8 +176,10 @@
       pointers.set(e.pointerId, 'none');
       return;
     }
-    if (state.phase === 'title' || state.phase === 'over') {
-      if (state.phase !== 'over' || state.overT > 1.0) pressed.start = true;
+    // タイトル・あそびかたは画面のボタン(HTML)で操作する
+    if (state.phase === 'title' || state.phase === 'howto') { pointers.set(e.pointerId, 'none'); return; }
+    if (state.phase === 'over') {
+      if (state.overT > 1.0) pressed.start = true;
       pointers.set(e.pointerId, 'none');
       return;
     }
@@ -242,7 +247,7 @@
 
   // ---------- ゲーム状態 ----------
   const state = {
-    phase: 'title', // title | ready | aim | cross | meet | slow | shot | result | over
+    phase: 'title', // title | howto | ready | aim | cross | meet | slow | shot | result | over
     paused: false,
     index: 0, total: TOTAL,
     goals: 0, headers: 0, score: 0, streak: 0, bestStreak: 0,
@@ -954,18 +959,21 @@
       else lock();
     } catch (e) { /* 非対応 */ }
   }
-  canvas.addEventListener('pointerup', () => { if (state.phase === 'title' || state.phase === 'over') goLandscape(); });
+  canvas.addEventListener('pointerup', () => { if (inMenu()) goLandscape(); });
+
+  // タイトル・あそびかた・結果画面(プレイしていない画面)
+  function inMenu() { return state.phase === 'title' || state.phase === 'howto' || state.phase === 'over'; }
 
   function togglePause() {
-    if (state.phase === 'title' || state.phase === 'over') return;
+    if (inMenu()) return;
     if (state.paused) resumeFromPause(); else state.paused = true;
   }
 
   // ---------- 更新 ----------
   function update(dt) {
     state.time += dt;
-    if (state.phase === 'title') {
-      if (pressed.start) { pressed.start = false; newGame(); }
+    if (state.phase === 'title' || state.phase === 'howto') {
+      if (pressed.start) { pressed.start = false; play(); }
       return;
     }
     if (state.phase === 'over') {
@@ -1497,18 +1505,50 @@
     ctx.fillText(text, W / 2, y, W - 40);
   }
 
+  // タイトル画面: 名前・ひとこと・ベスト記録だけを大きく(操作の説明は「あそびかた」へ)
   function drawTitle() {
-    ctx.fillStyle = 'rgba(8,14,20,0.55)';
+    ctx.fillStyle = 'rgba(8,14,20,0.5)';
     ctx.fillRect(0, 0, W, H);
-    centerText(t('title.name'), 140, 76, '#ffe14d', '900');
-    centerText(t('title.sub'), 195, 26);
-    ctx.font = '17px sans-serif';
-    ctx.fillStyle = '#e6e6e6';
-    const lines = [1, 2, 3, 4, 5, 6].map((i) => t(`help.${isTouch ? 'touch' : 'key'}.${i}`));
-    lines.forEach((l, i) => ctx.fillText(l, W / 2, 250 + i * 30, W - 60));
-    if (state.best) centerText(t('title.best', { c: state.best.goals, t: TOTAL, s: state.best.score }), 460, 20, '#9fe8ff');
-    if (Math.floor(state.time * 2) % 2 === 0) centerText(t(isTouch ? 'title.start.touch' : 'title.start.key'), 530, 30, '#ffffff');
-    centerText(t('title.sound'), 580, 15, '#cfd8dc', 'normal');
+    centerText(t('title.name'), 175, 104, '#ffe14d', '900');
+    centerText(t('title.sub'), 250, 34);
+    if (state.best) centerText(t('title.best', { c: state.best.goals, t: TOTAL, s: state.best.score }), 305, 26, '#9fe8ff');
+    if (!isTouch) centerText(t('title.keys'), 545, 19, '#e6e6e6', 'normal');
+    centerText(t('title.sound'), 578, 17, '#cfd8dc', 'normal');
+  }
+
+  // あそびかた: 3 つの段に分けて、大きな文字で
+  function drawHowto() {
+    ctx.fillStyle = 'rgba(8,14,20,0.78)';
+    ctx.fillRect(0, 0, W, H);
+    const d = isTouch ? 'touch' : 'key';
+    const rows = [
+      ['h', 'howto.a'], ['l', `howto.${d}.a1`], ['l', `howto.${d}.a2`],
+      ['h', 'howto.b'], ['l', `howto.${d}.b1`], ['l', `howto.${d}.b2`], ['l', `howto.${d}.b3`],
+      ['h', 'howto.c'], ['l', 'howto.c1'], ['l', 'howto.c2'],
+    ];
+    const x = Math.max(36, W / 2 - 440);
+    let y = 122;
+    ctx.save();
+    ctx.textAlign = 'left';
+    // 見出しは左寄せ(上の真ん中にある音・ナビのボタンと重ならないように)
+    ctx.font = '900 40px sans-serif';
+    ctx.lineWidth = 6; ctx.strokeStyle = 'rgba(0,0,0,0.7)';
+    ctx.strokeText(t('howto.title'), x, 66);
+    ctx.fillStyle = '#ffe14d'; ctx.fillText(t('howto.title'), x, 66);
+    for (const [kind, key] of rows) {
+      if (kind === 'h') {
+        y += 8;
+        ctx.font = '900 27px sans-serif';
+        ctx.fillStyle = '#ffcc80';
+      } else {
+        ctx.font = 'bold 23px sans-serif';
+        ctx.fillStyle = '#ffffff';
+      }
+      ctx.fillText((kind === 'l' ? '・' : '') + t(key), kind === 'l' ? x + 14 : x, y, W - x * 2 - 14);
+      y += kind === 'h' ? 38 : 35;
+    }
+    if (!isTouch) { ctx.font = '18px sans-serif'; ctx.fillStyle = '#cfd8dc'; ctx.fillText(t('howto.key.keys'), x, y + 4, W - x * 2); }
+    ctx.restore();
   }
 
   function rankOf(c) {
@@ -1645,7 +1685,7 @@
   function draw() {
     ctx.setTransform(overlayScale, 0, 0, overlayScale, 0, 0);
     ctx.clearRect(0, 0, W, H);
-    if (state.phase !== 'title') {
+    if (state.phase !== 'title' && state.phase !== 'howto') {
       drawPath();
       drawBallMarker();
       drawMinimap();
@@ -1666,7 +1706,9 @@
       }
     }
     if (state.phase === 'title') drawTitle();
+    if (state.phase === 'howto') drawHowto();
     if (state.phase === 'over') drawOver();
+    updateMenus();
     updateShareVisibility();
     updateLangVisibility();
     updateBanner();
@@ -1696,7 +1738,7 @@
     ctx.translate(MUTE.x, MUTE.y);
     ctx.scale(k, k);
     const x = 0, y = 0, r = 20;
-    if (!Sound.muted && !Sound.ready && state.phase !== 'title' && state.phase !== 'over') {
+    if (!Sound.muted && !Sound.ready && !inMenu()) {
       ctx.fillStyle = 'rgba(0,0,0,0.55)';
       ctx.fillRect(x - 84, y + 26, 168, 24);
       ctx.fillStyle = '#ffe14d';
@@ -1724,7 +1766,7 @@
   // 裏に回ったら一時停止して音を止める(広告の表示中は広告側が音を止めている)
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      if (state.phase !== 'title' && state.phase !== 'over') state.paused = true;
+      if (!inMenu()) state.paused = true;
       Sound.suspend();
     } else if (!Ads.showing) {
       Sound.resume();
@@ -1753,6 +1795,24 @@
     });
   }
   function resumeFromPause() { withInterstitial(() => { if (state.paused) state.paused = false; }); }
+  // タイトル・あそびかたから「プレイ」(全画面広告のあとで始める)
+  function play() { goLandscape(); withInterstitial(() => { if (state.phase === 'title' || state.phase === 'howto') newGame(); }); }
+  function openHowto() { if (state.phase === 'title' && !adBusy) state.phase = 'howto'; }
+  // あそびかたからタイトルへ戻るときも全画面広告
+  function backFromHowto() { withInterstitial(() => { if (state.phase === 'howto') state.phase = 'title'; }); }
+
+  // タイトル画面(プレイ / あそびかた)とあそびかた(プレイ / タイトルへ)のボタン
+  const titleMenuEl = $id('titleMenu'), howtoMenuEl = $id('howtoMenu');
+  for (const el of [titleMenuEl, howtoMenuEl]) for (const ev of ['pointerdown', 'pointerup']) el.addEventListener(ev, (e) => e.stopPropagation());
+  $id('playBtn').addEventListener('click', () => { audio(); play(); });
+  $id('howtoBtn').addEventListener('click', () => { audio(); openHowto(); });
+  $id('howtoPlay').addEventListener('click', () => { audio(); play(); });
+  $id('howtoBack').addEventListener('click', () => { audio(); backFromHowto(); });
+  function updateMenus() {
+    const t1 = state.phase === 'title' && !adBusy, t2 = state.phase === 'howto' && !adBusy;
+    if (t1 === titleMenuEl.hidden) titleMenuEl.hidden = !t1;
+    if (t2 === howtoMenuEl.hidden) howtoMenuEl.hidden = !t2;
+  }
 
   // 結果画面の「もう一度」「タイトルへ」ボタン
   $id('retryBtn').addEventListener('click', () => { audio(); if (state.phase === 'over') retry(); });
@@ -1764,14 +1824,15 @@
   $id('pauseResume').addEventListener('click', () => { audio(); if (state.paused) resumeFromPause(); });
   $id('pauseTitle').addEventListener('click', () => { audio(); if (state.paused) goTitle(); });
   function updatePauseMenu() {
-    const show = state.paused && !adBusy && !isPortrait() && state.phase !== 'title' && state.phase !== 'over';
+    const show = state.paused && !adBusy && !isPortrait() && !inMenu();
     if (show === pauseEl.hidden) pauseEl.hidden = !show;
   }
 
-  // Android の戻るボタン: プレイ中はポーズ(ポーズ中なら再開)、タイトル・結果画面ではアプリを閉じる
+  // Android の戻るボタン: プレイ中はポーズ(ポーズ中なら再開)、あそびかたではタイトルへ、タイトル・結果画面ではアプリを閉じる
   if (plugin('App')) {
     plugin('App').addListener('backButton', () => {
-      if (state.phase === 'title' || state.phase === 'over') plugin('App').exitApp();
+      if (state.phase === 'howto') backFromHowto();
+      else if (state.phase === 'title' || state.phase === 'over') plugin('App').exitApp();
       else if (state.paused) resumeFromPause();
       else state.paused = true;
     });
@@ -1835,10 +1896,10 @@
     startPlay();
   });
 
-  // ---------- バナー広告: タイトル画面・ポーズ画面・結果画面だけ(プレイ中は操作ボタンと重なるので出さない) ----------
+  // ---------- バナー広告: タイトル画面・あそびかた・ポーズ画面・結果画面だけ(プレイ中は操作ボタンと重なるので出さない) ----------
   function updateBanner() {
-    const paused = state.paused && state.phase !== 'title' && state.phase !== 'over';
-    Ads.setBanner((state.phase === 'title' || state.phase === 'over' || paused) && !isPortrait());
+    const paused = state.paused && !inMenu();
+    Ads.setBanner((inMenu() || paused) && !isPortrait());
   }
 
   // タイトル画面の下に、バージョン(アプリ版)・プライバシーポリシー・広告の設定(EU など)を出す

@@ -266,6 +266,60 @@ html, body {
   opacity: 0.6;
 }
 
+/* タイトル画面(プレイ / あそびかた)・あそびかた(タイトルへ / プレイ)のボタン */
+#titleMenu,
+#howtoMenu {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 12px;
+  z-index: 3;
+  font-family: sans-serif;
+}
+
+#titleMenu {
+  top: 54%;
+  width: min(400px, 56%);
+  flex-direction: column;
+}
+
+#howtoMenu {
+  top: 84%;
+  width: min(560px, 70%);
+}
+
+#titleMenu[hidden],
+#howtoMenu[hidden] {
+  display: none;
+}
+
+#titleMenu .sbtn,
+#howtoMenu .sbtn {
+  flex: 1;
+  border: 0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font: inherit;
+  font-weight: 900;
+  font-size: clamp(16px, 4.2vh, 24px);
+  cursor: pointer;
+  background: #dfe7f7;
+  color: #1b2440;
+}
+
+#titleMenu .sbtn.retry,
+#howtoMenu .sbtn.retry {
+  background: linear-gradient(#ffe36b, #ffb300);
+  color: #1b1200;
+  box-shadow: 0 4px 0 #a86a00, 0 8px 18px rgba(0, 0, 0, 0.4);
+}
+
+#titleMenu .sbtn:active,
+#howtoMenu .sbtn:active {
+  transform: translateY(2px);
+}
+
 /* ポーズ画面のボタン */
 #pauseMenu {
   position: absolute;

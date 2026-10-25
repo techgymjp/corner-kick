@@ -302,7 +302,7 @@ window.Sound = (() => {
   function update(state) {
     if (!AC) return;
     const now = AC.currentTime;
-    const playing = state.phase !== 'title' && state.phase !== 'over';
+    const playing = state.phase !== 'title' && state.phase !== 'howto' && state.phase !== 'over';
     if (playing) bandStart(); else if (band.on) bandStop();
 
     // プレー中は応援を絞って、どよめきを主役に
