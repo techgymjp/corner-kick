@@ -51,7 +51,7 @@ window.I18N = (() => {
       'sound.tap': '音が出ないときはタップ',
 
       'goal': 'ゴーーール!!',
-      'goal.header': 'ジャンピングヘッドで叩き込んだ!', 'goal.slide': 'スライディングで押し込んだ!',
+      'goal.head': 'ジャンピングヘッドで叩き込んだ!', 'goal.slide': 'スライディングで押し込んだ!',
       'goal.direct': '直接ゴール!オリンピコ!',
       'goal.corner': 'ゴール隅に決めた!',
       'miss.save': 'キーパーに止められた…', 'miss.catch': 'キーパーにキャッチされた…',
@@ -136,7 +136,7 @@ window.I18N = (() => {
       'sound.tap': 'No sound? Tap here',
 
       'goal': 'GOOOAL!!',
-      'goal.header': 'A towering header!', 'goal.slide': 'Slid in to finish!',
+      'goal.head': 'A towering header!', 'goal.slide': 'Slid in to finish!',
       'goal.direct': 'Straight in! An Olimpico!',
       'goal.corner': 'Right in the corner!',
       'miss.save': 'Saved by the keeper...', 'miss.catch': 'The keeper claims it...',
