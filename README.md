@@ -12,9 +12,9 @@ GitHub Pages などの静的ホスティングにそのまま置けます。
 ## 1 本の流れ
 
 1. **選手A(背番号10)がコーナーキック** — 左コーナーか右コーナーから蹴ります(画面に大きく「左コーナー」「右コーナー」)。
-   - 左下の方角リングで **落下地点(黄色の輪)** を動かす
-   - 「高く」か「低く」を **長押ししてゲージをため、緑のゾーンで離す** とキック。早すぎると手前に、遅すぎると奥に落ちる
-   - 「高く」はふわりと上がって頭の上から落ちてくるボール、「低く」は速いライナー
+   - 左下の方角リングで **落下地点(黄色の輪)** を動かす(遠く・近くもリングで決める)
+   - 「キック」を **長押しするほど高く上がる**(ボタンの右の縦ゲージ)。離した瞬間に蹴る
+   - 短く押せば速くて低いライナー、長く押せばふわりと上がって頭の上から落ちてくるボール。どちらも狙った落下地点に届く
    - どちらもゴール側へ曲がる(インスイング)
 2. **選手B が合わせる** — キックすると、**落下地点に一番近い味方**(9番・4番・5番・11番のどれか)が選手B になって操作が切り替わります。
    移動はジャッカルの選手B と同じく、方角リングとダッシュ(スタミナ消費)で走り込みます。
@@ -28,7 +28,7 @@ GitHub Pages などの静的ホスティングにそのまま置けます。
    - ゴールエリアに落ちるボールはキーパーが飛び出してキャッチする
    - シュートにはキーパーが反応して横っ飛び。キーパーから遠いほど、速いほど決まりやすい
 
-後半になるほど相手の反応が速くなります。ナビ ON なら、キックの軌道(高く=水色・低く=オレンジ)、ボールに合わせる場所(緑の輪)、
+後半になるほど相手の反応が速くなります。ナビ ON なら、キックの軌道(ためる前は一番低い軌道と一番高い軌道、ためている間はその高さの軌道)、ボールに合わせる場所(緑の輪)、
 「今押せば当たる」タイミング(足元のオレンジの輪とボタンの点滅)が出ます。
 
 ## 操作
@@ -36,8 +36,7 @@ GitHub Pages などの静的ホスティングにそのまま置けます。
 | 操作 | タッチ / マウス | キーボード |
 | --- | --- | --- |
 | 落下地点を動かす(選手A)・選手B の移動 | 左下の **方角リング**(16方位・中心から離すほど速い) | 矢印キー / WASD |
-| 高いボールを蹴る(選手A) | 「高く」ボタン長押し → 離す | I 長押し → 離す |
-| 低いボールを蹴る(選手A) | 「低く」ボタン長押し → 離す | J 長押し → 離す |
+| キック(選手A・長押しするほど高く) | 「キック」ボタン長押し → 離す | Space(または I)長押し → 離す |
 | ジャンプ(選手B・ヘディング) | 前・左・右・ダッシュの真ん中の「ジャンプ」ボタン | Space(または U) |
 | 前・左・右スライディング(選手B) | 右側の「前」「左」「右」ボタン | I / J / L |
 | ダッシュ(選手B) | ダッシュボタン長押し(スタミナ消費) | Shift |
@@ -49,7 +48,6 @@ GitHub Pages などの静的ホスティングにそのまま置けます。
 
 ## スコア
 
-- ナイスキック(ゲージを緑で離す): 100
 - ゴール: 1000 + ヘディング 300 / スライディング 200 + 当たりの良さ(最大 200)
 - ゴールの隅(ポストの近く)に決めると +200、連続ゴールでボーナス
 - コーナーから直接ゴール(オリンピコ)は +1500
@@ -93,6 +91,6 @@ GitHub Pages などの静的ホスティングにそのまま置けます。
 
 **Corner Kick** — a 3D football browser game about scoring from set pieces.
 
-- Play as **Player A** at the corner flag: set the landing spot with the direction ring, then hold HIGH or LOW to charge the kick and release in the green zone.
+- Play as **Player A** at the corner flag: set the landing spot with the direction ring, then hold KICK — the longer you hold, the higher the ball (vertical gauge) — and release to deliver.
 - After the kick you switch to **Player B** — whichever teammate is nearest the landing spot. Run onto the ball, JUMP to head high balls or SLIDE forward / left / right to poke in low ones. Your marker, the zonal defenders and the keeper all try to stop you.
 - 10 corners per game. Open `index.html` in a browser to play.

@@ -26,9 +26,9 @@
   const KICK_T = 0.5, SLIDE_T = 0.9, SLIDE_V = 7.5;
   // キックのあとに選手B になれる味方と背番号(scene3d.js の ROSTER と同じ)
   const NUMS = { B: '9', m1: '4', m2: '5', m3: '11' };
-  const KICK_TYPES = { high: { T: 1.95, curl: 3.2 }, low: { T: 1.35, curl: 4.2 } };
-  const SWEET = 0.78, SWEET_W = 0.075;         // キックのゲージの「ちょうどいい」ところ
-  const GAUGE_T = 0.9;                         // ゲージが満タンになるまでの時間
+  // キックの高さ(ゲージ 0〜1): 0 = 速くて低いライナー、1 = ふわりと高いボール。滞空時間と曲がり方を決める
+  const KICK_LOW = { T: 1.15, curl: 4.6 }, KICK_HIGH = { T: 2.2, curl: 3.0 };
+  const GAUGE_T = 1.2;                         // ゲージが一番上まで上がる時間(長押しするほど高く)
   const AIM_LIMIT = 12;
   const SLOW_T = 0.32, SLOW_K = 0.3;           // ボールに合わせた瞬間のスローモーション(実時間・倍率)
   const DT = 1 / 120;
@@ -74,11 +74,10 @@
 
   const RING = { x: 125, y: 510, r: 95, dead: 14 };
   // 右側のボタン
-  //   選手A: act1(高く)・act2(低く)
+  //   選手A: act1(キック。長押しするほど高く上がる)
   //   選手B: 前・左・右(スライディング)・ダッシュをひし形に並べ、真ん中にジャンプ(どれにも親指を少し動かすだけで届く)
   const BTN = {
-    act1: { x: 785, y: 360, r: 46, key: 'I' },
-    act2: { x: 680, y: 465, r: 46, key: 'J' },
+    act1: { x: 785, y: 465, r: 54, key: 'Space' },
     front: { x: 785, y: 360, r: 46, key: 'I' },
     left: { x: 680, y: 465, r: 46, key: 'J' },
     right: { x: 890, y: 465, r: 46, key: 'L' },
@@ -98,10 +97,7 @@
       if (controllingB()) {
         const act = { i: 'front', k: 'front', j: 'left', l: 'right', ' ': 'jump', u: 'jump' }[k];
         if (act) pressed.act = act;
-      } else {
-        if (k === 'i') pressed.act = 'act1';
-        if (k === 'j') pressed.act = 'act2';
-      }
+      } else if (k === ' ' || k === 'i') pressed.act = 'act1';
       if (k === ' ' || k === 'Enter') pressed.start = true;
       if (k === 'p' || k === 'Escape') togglePause();
       if (k === 'm') Sound.setMuted(!Sound.muted);
@@ -118,8 +114,7 @@
   // ボタンを押し続けているか(キックのゲージ用)
   function isHeld(name) {
     if (bot) return botHold === name;
-    if (name === 'act1' && keys.has('i')) return true;
-    if (name === 'act2' && keys.has('j')) return true;
+    if (name === 'act1' && (keys.has(' ') || keys.has('i'))) return true;
     for (const v of pointers.values()) if (v === name) return true;
     return false;
   }
@@ -133,7 +128,7 @@
     return state.phase === 'meet' || state.phase === 'slow' || state.phase === 'shot' || (state.phase === 'result' && !!state.play && state.play.switched);
   }
   function buttonsShown() {
-    if (state.phase === 'ready' || state.phase === 'aim' || state.phase === 'kicking') return ['act1', 'act2'];
+    if (state.phase === 'ready' || state.phase === 'aim' || state.phase === 'kicking') return ['act1'];
     if (controllingB()) return ['front', 'left', 'right', 'jump', 'dash'];
     return [];
   }
@@ -246,7 +241,7 @@
     phase: 'title', // title | ready | aim | cross | meet | slow | shot | result | over
     paused: false,
     index: 0, total: TOTAL,
-    goals: 0, headers: 0, perfectKicks: 0, score: 0, streak: 0, bestStreak: 0,
+    goals: 0, headers: 0, score: 0, streak: 0, bestStreak: 0,
     phaseT: 0, overT: 0,
     play: null, actors: {}, ball: null, charge: null,
     camF: { x: 0, y: 1 },
@@ -268,7 +263,7 @@
   function newGame(seed) {
     state.seed = (seed != null ? seed : (Date.now() ^ (Math.random() * 1e9))) >>> 0;
     Object.assign(state, {
-      phase: 'ready', paused: false, index: 0, goals: 0, headers: 0, perfectKicks: 0, score: 0,
+      phase: 'ready', paused: false, index: 0, goals: 0, headers: 0, score: 0,
       streak: 0, bestStreak: 0, phaseT: 0, overT: 0, popups: [], lastResult: null, newRecord: false, navUsed: false,
     });
     startPlay();
@@ -415,9 +410,9 @@
     return pts;
   }
 
-  // 選手A のキック。落下地点・ゲージから初速を決める(曲がりながら狙った地点に落ちる)
-  function kickVelocity(from, to, type) {
-    const k = KICK_TYPES[type];
+  // 選手A のキック。落下地点と高さ(ゲージ g)から初速を決める(曲がりながら狙った地点に落ちる)
+  function kickVelocity(from, to, g) {
+    const k = { T: KICK_LOW.T + (KICK_HIGH.T - KICK_LOW.T) * g, curl: KICK_LOW.curl + (KICK_HIGH.curl - KICK_LOW.curl) * g };
     const d = norm(to.x - from.x, to.y - from.y);
     // インスイング: ゴール側(+y)へ曲がる
     let px = -d.y, py = d.x;
@@ -434,23 +429,13 @@
   function launchBall() {
     const p = state.play, b = state.ball, ch = p.kick;
     const from = { x: b.x, y: b.y };
-    const err = ch.g - SWEET;
-    const perfect = Math.abs(err) <= SWEET_W;
+    // 落下地点は左の方角リングで決めた所。ほんの少しだけばらつく
+    const lat = rand(-0.3, 0.3), along = rand(-0.3, 0.3);
     const dir = norm(state.target.x - from.x, state.target.y - from.y);
-    const along = perfect ? rand(-0.4, 0.4) : err * 15;
-    const lat = rand(-1, 1) * (perfect ? 0.3 : 0.4 + Math.abs(err) * 3);
     const to = { x: state.target.x + dir.x * along - dir.y * lat, y: state.target.y + dir.y * along + dir.x * lat };
-    Object.assign(b, kickVelocity(from, to, ch.type), { still: false, bounces: 0, touched: false });
+    Object.assign(b, kickVelocity(from, to, ch.g), { still: false, bounces: 0, touched: false });
     p.landing = to;
-    if (perfect) {
-      state.perfectKicks++;
-      state.score += 100;
-      popup(t('gauge.perfect'), '#7dffb0', 34);
-      popup('+100', '#9fe8ff', 22, 0.15);
-    } else {
-      popup(t(err > 0 ? 'gauge.long' : 'gauge.short'), '#ffcc80', 30);
-    }
-    Sound.kick(0.6 + ch.g * 0.4);
+    Sound.kick(1 - ch.g * 0.3);
     planDefence();
     state.phase = 'cross';
     state.phaseT = 0;
@@ -922,23 +907,22 @@
     state.camF = norm(T.x - state.actors.A.x, T.y - state.actors.A.y);
     const ch = state.charge;
     if (!ch) {
-      if (input.act === 'act1' || input.act === 'act2') {
-        state.charge = { btn: input.act, type: input.act === 'act1' ? 'high' : 'low', g: 0, dir: 1 };
+      if (input.act === 'act1') {
+        state.charge = { btn: 'act1', g: 0 };
       } else if (state.phaseT > AIM_LIMIT) {
-        state.charge = { btn: null, type: 'high', g: 0.55, dir: 0 };
+        state.charge = { btn: null, g: 0.6 };
         kick();
       }
       return;
     }
-    ch.g += ch.dir * dt / GAUGE_T;
-    if (ch.g >= 1) { ch.g = 2 - ch.g; ch.dir = -1; }
-    if (ch.g <= 0) { ch.g = -ch.g; ch.dir = 1; }
+    // 長押しするほど高く(一番上で止まる)
+    ch.g = Math.min(1, ch.g + dt / GAUGE_T);
     if (!isHeld(ch.btn) || state.phaseT > AIM_LIMIT + 2) kick();
   }
 
   function kick() {
     const p = state.play, ch = state.charge;
-    p.kick = { type: ch.type, g: clamp(ch.g, 0, 1) };
+    p.kick = { g: clamp(ch.g, 0, 1) };
     state.charge = null;
     setMode(state.actors.A, 'kick');
     state.phase = 'kicking';
@@ -1106,8 +1090,9 @@
     if (state.phase === 'aim' || state.phase === 'ready') state.guide.target = state.target;
     if (state.phase === 'aim' && state.nav) {
       const from = { x: b.x, y: b.y, z: R, ax: 0, ay: 0 };
-      state.path = {};
-      for (const type of ['high', 'low']) state.path[type] = predictPath(Object.assign({}, from, kickVelocity(from, state.target, type)), 2.2);
+      // ためている高さの軌道。ためる前は一番低いのと一番高いのを薄く出す
+      const gs = state.charge ? [state.charge.g] : [0, 1];
+      state.path = gs.map((g) => predictPath(Object.assign({}, from, kickVelocity(from, state.target, g)), 2.4));
     } else state.path = null;
     // 頭で合わせられる場所(落ちてくるボールが頭の高さを通るところ)。低いボールは足で合わせるところ
     state.meet = null;
@@ -1253,7 +1238,7 @@
     if (name === 'dash') return [t('btn.dash'), ''];
     if (name === 'jump') return [t('btn.jump'), ''];
     if (controllingB()) return [t('btn.' + name), t('btn.slide')];
-    return [t(name === 'act1' ? 'btn.high' : 'btn.low'), t('btn.kick')];
+    return [t('btn.kick'), t('btn.kickHold')];
   }
 
   function drawControls() {
@@ -1311,8 +1296,7 @@
         ctx.scale(ak, ak);
         ctx.strokeStyle = on ? '#222' : '#ffe14d'; ctx.lineWidth = 2.5;
         ctx.beginPath();
-        if (name === 'act1') { ctx.moveTo(-16, 6); ctx.quadraticCurveTo(0, -14, 16, 6); }
-        else { ctx.moveTo(-16, 2); ctx.quadraticCurveTo(0, -4, 16, 2); }
+        ctx.moveTo(-16, 6); ctx.quadraticCurveTo(0, -14, 16, 6);
         ctx.stroke();
         ctx.restore();
       }
@@ -1347,42 +1331,41 @@
     ctx.restore();
   }
 
-  // キックのゲージ(緑のゾーンで離すとピタリ)
+  // キックの高さのゲージ(キックボタンの右に縦長。長押しするほど上がる)
   function drawGauge() {
-    if (state.phase !== 'aim' && state.phase !== 'kicking') return;
-    const ch = state.charge || (state.phase === 'kicking' ? { g: state.play.kick.g } : null);
-    const w = Math.min(340, W * 0.34), h = 22, x = W / 2 - w / 2, y = H - 74;
+    if (state.phase !== 'aim' && state.phase !== 'kicking' && state.phase !== 'ready') return;
+    const g = state.charge ? state.charge.g : state.phase === 'kicking' ? state.play.kick.g : 0;
+    const bt = BTN.act1;
+    const w = isTouch ? 30 : 22, h = isTouch ? 250 : 190;
+    const x = Math.min(W - w - 14, bt.x + bt.r + (isTouch ? 46 : 34)), y = bt.y - h / 2;
     ctx.save();
+    ctx.globalAlpha = state.phase === 'ready' ? 0.4 : 1;
     ctx.fillStyle = 'rgba(0,0,0,0.55)';
-    ctx.fillRect(x - 8, y - 26, w + 16, h + 36);
-    ctx.fillStyle = '#ddd';
-    ctx.font = 'bold 13px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(t('btn.kick'), W / 2, y - 9);
-    const gr = ctx.createLinearGradient(x, 0, x + w, 0);
-    gr.addColorStop(0, '#3b4a63'); gr.addColorStop(1, '#ff6b4a');
-    ctx.fillStyle = gr;
+    ctx.fillRect(x - 8, y - 26, w + 16, h + 50);
+    ctx.fillStyle = 'rgba(40,50,70,0.9)';
     ctx.fillRect(x, y, w, h);
-    ctx.fillStyle = '#3cff8a';
-    ctx.fillRect(x + w * (SWEET - SWEET_W), y, w * SWEET_W * 2, h);
+    const gr = ctx.createLinearGradient(0, y + h, 0, y);
+    gr.addColorStop(0, '#ffb74d'); gr.addColorStop(1, '#7fe3ff');
+    ctx.fillStyle = gr;
+    ctx.fillRect(x, y + h * (1 - g), w, h * g);
     ctx.strokeStyle = 'rgba(255,255,255,0.8)'; ctx.lineWidth = 1.5; ctx.strokeRect(x, y, w, h);
-    if (ch) {
-      const gx = x + w * ch.g;
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(gx - 3, y - 5, 6, h + 10);
-    }
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 1;
+    for (let i = 1; i < 4; i++) { ctx.beginPath(); ctx.moveTo(x, y + h * i / 4); ctx.lineTo(x + w, y + h * i / 4); ctx.stroke(); }
+    if (g > 0) { ctx.fillStyle = '#fff'; ctx.fillRect(x - 4, y + h * (1 - g) - 2, w + 8, 4); }
+    ctx.fillStyle = '#ddd';
+    ctx.font = `bold ${isTouch ? 15 : 12}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText(t('gauge.high'), x + w / 2, y - 9);
+    ctx.fillText(t('gauge.low'), x + w / 2, y + h + 18);
     ctx.restore();
   }
 
   // キックの軌道の予測(ナビ ON のとき)。投影した点を並べる
   function drawPath() {
     if (!state.path || state.phase !== 'aim') return;
-    const sel = state.charge ? state.charge.type : null;
-    for (const type of ['high', 'low']) {
-      const pts = state.path[type];
-      if (!pts) continue;
-      const on = sel === type;
-      ctx.fillStyle = type === 'high' ? (on ? '#7fe3ff' : 'rgba(127,227,255,0.45)') : (on ? '#ffb74d' : 'rgba(255,183,77,0.45)');
+    const on = !!state.charge;
+    for (const pts of state.path) {
+      ctx.fillStyle = on ? '#7fe3ff' : 'rgba(127,227,255,0.4)';
       for (let i = 4; i < pts.length; i += 3) {
         const q = pts[i];
         const s = Scene3D.project(q.x, q.y, q.z);
@@ -1506,7 +1489,7 @@
     ctx.font = '16px sans-serif';
     ctx.fillStyle = '#e6e6e6';
     ctx.textAlign = 'center';
-    ctx.fillText(t('over.line1', { s: state.score, h: state.headers, k: state.perfectKicks, t: TOTAL, m: state.bestStreak, nav: navLabel() }), W / 2, 220, W - 40);
+    ctx.fillText(t('over.line1', { s: state.score, h: state.headers, m: state.bestStreak, nav: navLabel() }), W / 2, 220, W - 40);
     if (state.newRecord) centerText(t('over.new'), 256, 20, '#ff8a65');
     else if (state.best) centerText(t('over.best', { c: state.best.goals, s: state.best.score }), 256, 17, '#9fe8ff');
   }
@@ -1751,15 +1734,14 @@
       Object.assign(RING, { x: 168, y: 478, r: 122, dead: 16 });
       const cx = W - 232;
       for (const [k, x, y, r] of [['front', cx, 300, 62], ['left', cx - 150, 445, 62], ['right', cx + 150, 445, 62], ['jump', cx, 445, 60], ['dash', cx, 585, 52]]) Object.assign(BTN[k], { x, y, r });
-      Object.assign(BTN.act1, { x: cx, y: 300, r: 70 });
-      Object.assign(BTN.act2, { x: cx - 150, y: 445, r: 70 });
+      Object.assign(BTN.act1, { x: cx, y: 445, r: 80 });
       Object.assign(MUTE, { y: 42, r: 27 });
       Object.assign(NAVBTN, { y: 42, w: 104, h: 42 });
       MUTE.x = W / 2 + 90;
       NAVBTN.x = MUTE.x + 92;
     } else {
       const cx = W - 175;
-      BTN.act1.x = BTN.front.x = BTN.jump.x = BTN.dash.x = cx; BTN.act2.x = BTN.left.x = cx - 105; BTN.right.x = cx + 105;
+      BTN.act1.x = BTN.front.x = BTN.jump.x = BTN.dash.x = cx; BTN.left.x = cx - 105; BTN.right.x = cx + 105;
       MUTE.x = W / 2 + 140;
       NAVBTN.x = MUTE.x + 64;
     }
@@ -1793,6 +1775,6 @@
     state, newGame, update, DT, TOTAL,
     setBot(fn) { bot = fn; },
     predictPath, kickVelocity,
-    consts: { HEAD_Z, LEAP, SLIDE_V, SWEET, SWEET_W, GAUGE_T, KICK_TYPES },
+    consts: { HEAD_Z, LEAP, SLIDE_V, GAUGE_T, KICK_LOW, KICK_HIGH },
   };
 })();
