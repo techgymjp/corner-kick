@@ -181,4 +181,7 @@ Corner Kick is here! Whip in corners and finish with jumping headers or slides. 
 
 ## 画像
 
+まとめてダウンロード: https://github.com/techgymjp/corner-kick/raw/claude/cool-archimedes-ckvrl0/docs/store/ios/appstore-images.zip
+(画像を差し替えたら ZIP も作り直す)
+
 `../../IOS_BUILD.md` の 6 章の表と同じです（`6.3inch/` のスクリーンショット日英各 4 枚、`appstore-header-3840x1646.png`、`appstore-search-3840x2560.png`）。

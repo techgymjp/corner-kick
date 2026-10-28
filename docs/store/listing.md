@@ -100,6 +100,9 @@ Whip in the corner, then rise for the header! A 3D football set-piece game.
 
 ## 画像（このフォルダ）
 
+まとめてダウンロード: https://github.com/techgymjp/corner-kick/raw/claude/cool-archimedes-ckvrl0/docs/store/googleplay-images.zip
+(画像を差し替えたら ZIP も作り直す)
+
 | 用途 | ファイル | サイズ |
 | --- | --- | --- |
 | アプリのアイコン | `icon-512.png` | 512 × 512 |
