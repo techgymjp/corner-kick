@@ -6,7 +6,7 @@
 画面は **操作中の選手の背中越しの3D視点**。ナイター照明のスタジアムで、選手の動き・ボタン・花火・歓声・質感は
 techgymjp/jackal(ジャッカル)と同じ作りです。
 
-`index.html` をブラウザで開くだけで遊べます(Web 版はビルド不要)。Android アプリ版もあります(下記)。3D描画に同梱の three.js(`vendor/three.min.js`, MIT License)を使っています。
+`index.html` をブラウザで開くだけで遊べます(Web 版はビルド不要)。Android アプリ版と iOS アプリ版もあります(下記)。3D描画に同梱の three.js(`vendor/three.min.js`, MIT License)を使っています。
 GitHub Pages などの静的ホスティングにそのまま置けます。
 
 ## 1 本の流れ
@@ -105,6 +105,19 @@ AdMob のアプリ ID は `android/app/src/main/res/values/strings.xml` の `adm
 手元で試すとき: `npm install` → `npm run android:sync` → `npm run android:open`(Android Studio が必要)。
 アイコンと起動画面は `assets/` の元画像から `npx @capacitor/assets generate --android` で生成しています。
 
+## iOS アプリ
+
+Android 版と同じ Capacitor のプロジェクトに `ios/` を足しています。構成は techgymjp/jet-fighter(JET STRIKE)の iOS 版と同じです。
+ビルドと App Store への提出は Mac の Xcode で行います。手順は [`docs/IOS_BUILD.md`](docs/IOS_BUILD.md) です。
+
+- Bundle ID: `jp.techgym.cornerkick`(Android のパッケージ名と同じ)。Team ID `GNM3VTX9YG`
+- iPhone 専用・横画面固定・全画面・プレイ中は画面を消さない。ダイナミックアイランドやホームバーの所にはゲームを置かない(セーフエリア)
+- 広告は Android と同じ場面に出す。AdMob の iOS 用アプリ ID は `ios/App/App/Info.plist` の `GADApplicationIdentifier`、本番の広告ユニット ID は `ads.js` の `UNITS.ios.production`
+- 起動時に、広告の同意確認のあと App Tracking Transparency の確認を出す
+- `npm run ios:sync`(テスト広告)/ `npm run ios:release`(本番広告。App Store 用)/ `npm run ios:open`
+- GitHub Actions(`.github/workflows/ios.yml`)で、push のたびに署名なしでシミュレーター向けにビルドできるかを確認する
+- App Store 用の画像は `docs/store/ios/`(スクリーンショット 2622×1206 日英 各 4 枚、ヘッダ 3840×1646、検索結果 3840×2560)
+
 ## ファイル
 
 | ファイル | 内容 |
@@ -115,6 +128,7 @@ AdMob のアプリ ID は `android/app/src/main/res/values/strings.xml` の `adm
 | `i18n.js` | 日本語 / 英語の文言 |
 | `ads.js` | 広告(Android アプリのときだけ動く) |
 | `android/` | Android アプリのプロジェクト(Capacitor) |
+| `ios/` | iOS アプリのプロジェクト(Capacitor) |
 
 テスト用に `window.CornerKick`(`newGame(seed)`、`update(dt)`、`setBot(fn)`、`forceSide` など)を公開しています。
 
@@ -130,4 +144,4 @@ AdMob のアプリ ID は `android/app/src/main/res/values/strings.xml` の `adm
 
 - Play as **Player A** at the corner flag: set the landing spot with the direction ring, then hold KICK — the longer you hold, the higher the ball (vertical gauge) — and release to deliver.
 - After the kick you switch to **Player B** — whichever teammate is nearest the landing spot. Run onto the ball, JUMP to head high balls or SLIDE forward / left / right to poke in low ones. Your marker, the zonal defenders and the keeper all try to stop you.
-- 10 corners per game. Open `index.html` in a browser to play. An Android app (Capacitor) is also built by GitHub Actions.
+- 10 corners per game. Open `index.html` in a browser to play. An Android app (Capacitor) is built by GitHub Actions, and an iOS app is built with Xcode (`docs/IOS_BUILD.md`).

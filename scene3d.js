@@ -254,7 +254,10 @@ window.Scene3D = (() => {
   function buildStadium() {
     // 広告看板(ピッチの周り)
     const boards = roundRect(HX + 6, GL + 6, 3);
-    strip(boards, { steps: 1, at: (u) => [0, u * 0.9] }, 16, new THREE.MeshBasicMaterial({ map: boardTexture(), side: THREE.DoubleSide }));
+    // 看板はピッチ側(輪の内側)から見るので、文字が裏返らないよう横向きに反転して貼る
+    const boardTex = boardTexture();
+    boardTex.repeat.x = -1;
+    strip(boards, { steps: 1, at: (u) => [0, u * 0.9] }, 16, new THREE.MeshBasicMaterial({ map: boardTex, side: THREE.DoubleSide }));
 
     // 観客席(すり鉢状)
     const ring = roundRect(HX + 10, GL + 10, 12);

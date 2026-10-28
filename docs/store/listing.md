@@ -111,3 +111,13 @@ Whip in the corner, then rise for the header! A 3D football set-piece game.
 スクリーンショットの内容: 1 タイトル / 2 選手Aがコーナーから蹴る(高さのゲージをためている) / 3 選手Bが落ちてくるボールにジャンプ / 4 ヘディングでゴールして花火 / 5 パーフェクトの結果画面
 
 ゲームを自動操作して撮影しています。機械翻訳で追加した他の言語には、英語の画像を使ってください。
+
+App Store(iOS)用の画像は `ios/` にあります(手順は `../IOS_BUILD.md` の 6 章)。
+
+| 用途 | ファイル | サイズ |
+| --- | --- | --- |
+| スクリーンショット(Dynamic Island 搭載 iPhone 中型ディスプレイ) | `ios/6.3inch/ja-1-kick.png` 〜 `ja-4-result.png`、`en-1-kick.png` 〜 `en-4-result.png` | 2622 × 1206 |
+| ヘッダ | `ios/appstore-header-3840x1646.png` | 3840 × 1646 |
+| 検索結果 | `ios/appstore-search-3840x2560.png` | 3840 × 2560 |
+
+スクリーンショットの内容: 1 選手Aがコーナーから蹴る / 2 選手Bが落ちてくるボールにジャンプ / 3 ヘディングでゴールして花火 / 4 パーフェクトの結果画面。ヘッダと検索結果は文字なし(App Store がアプリ名を重ねる)
