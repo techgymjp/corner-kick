@@ -179,7 +179,14 @@ push するだけで GitHub Actions（GitHub の Mac 環境）がビルドし、
 | `ASC_ISSUER_ID` | Issuer ID |
 | `ASC_KEY_P8_BASE64` | API キー（.p8）を変換した文字列 |
 
-登録が終わったら、Claude Code に「iOS の自動アップロードのワークフローを作って」と頼みます。いまの `.github/workflows/ios.yml` は、署名なしで「ビルドできるか」だけを push のたびに確認するものです。
+5 つが登録されていれば、`.github/workflows/ios.yml` が push のたびに次のことを自動で行います(登録されていないときは、署名なしで「ビルドできるか」だけを確認します)。
+
+1. 本番の広告 ID でゲームのファイルを iOS のプロジェクトにコピーする(`npm run ios:release` と同じ)
+2. 配布用の証明書で署名して Archive する。ビルド番号は「Actions の実行回数 + 100」(Mac から手でアップロードした 1、2、3… とぶつからないように)
+3. App Store Connect にアップロードする。10〜30 分ほどで「TestFlight」タブにビルドが出る
+
+Actions の実行のページの「Summary」に、アップロードしたバージョンとビルド番号が出ます。審査への提出は、これまでどおり App Store Connect で行います(6 章)。
+
 
 **注意**：証明書（.p12）、そのパスワード、API キー（.p8）は、チャット・AI へのアップロード・リポジトリへのコミットで**絶対に共有しない**でください。
 
