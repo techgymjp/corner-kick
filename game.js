@@ -1512,8 +1512,8 @@
     centerText(t('title.name'), 175, 104, '#ffe14d', '900');
     centerText(t('title.sub'), 250, 34);
     if (state.best) centerText(t('title.best', { c: state.best.goals, t: TOTAL, s: state.best.score }), 305, 26, '#9fe8ff');
-    if (!isTouch) centerText(t('title.keys'), 545, 19, '#e6e6e6', 'normal');
-    centerText(t('title.sound'), 578, 17, '#cfd8dc', 'normal');
+    if (!isTouch) centerText(t('title.keys'), 562, 19, '#e6e6e6', 'normal');
+    centerText(t('title.sound'), 596, 17, '#cfd8dc', 'normal');
   }
 
   // あそびかた: 3 つの段に分けて、大きな文字で
@@ -1808,10 +1808,20 @@
   $id('howtoBtn').addEventListener('click', () => { audio(); openHowto(); });
   $id('howtoPlay').addEventListener('click', () => { audio(); play(); });
   $id('howtoBack').addEventListener('click', () => { audio(); backFromHowto(); });
+  // Web 版だけ、タイトル・あそびかたに Android アプリ(Google Play)へのリンクを出す(アプリの中では出さない)
+  const storeLinkEl = $id('storeLink');
+  for (const ev of ['pointerdown', 'pointerup']) storeLinkEl.addEventListener(ev, (e) => e.stopPropagation());
   function updateMenus() {
     const t1 = state.phase === 'title' && !adBusy, t2 = state.phase === 'howto' && !adBusy;
     if (t1 === titleMenuEl.hidden) titleMenuEl.hidden = !t1;
     if (t2 === howtoMenuEl.hidden) howtoMenuEl.hidden = !t2;
+    const s = !NATIVE && (t1 || t2);
+    if (s === storeLinkEl.hidden) storeLinkEl.hidden = !s;
+    storeLinkEl.classList.toggle('onTitle', t1);
+    storeLinkEl.classList.toggle('onHowto', t2);
+    // タイトル画面では「あそびかた」ボタンのすぐ下に置く(画面の高さによってボタンの大きさが変わるため)
+    const top = t1 ? Math.round(titleMenuEl.offsetTop + titleMenuEl.offsetHeight + 10) + 'px' : '';
+    if (storeLinkEl.style.top !== top) storeLinkEl.style.top = top;
   }
 
   // 結果画面の「もう一度」「タイトルへ」ボタン

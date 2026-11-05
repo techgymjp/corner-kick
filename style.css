@@ -290,7 +290,7 @@ html, body {
 }
 
 #titleMenu {
-  top: 54%;
+  top: 50%;
   width: min(400px, 56%);
   flex-direction: column;
 }
@@ -329,6 +329,38 @@ html, body {
 #titleMenu .sbtn:active,
 #howtoMenu .sbtn:active {
   transform: translateY(2px);
+}
+
+/* Web 版のタイトル・あそびかたに出す Android アプリ(Google Play)へのリンク */
+.storeLink {
+  position: absolute;
+  z-index: 3;
+  font-family: sans-serif;
+  font-weight: bold;
+  font-size: clamp(12px, 2.8vh, 16px);
+  color: #cfe8ff;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(207, 232, 255, 0.5);
+  border-radius: 16px;
+  padding: 5px 14px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.storeLink[hidden] {
+  display: none;
+}
+
+/* タイトル画面: 「あそびかた」ボタンのすぐ下(top は game.js がボタンの下の端に合わせる) */
+.storeLink.onTitle {
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* あそびかた: 右上(見出しや下のボタンと重ならない所) */
+.storeLink.onHowto {
+  right: 16px;
+  top: 4%;
 }
 
 /* ポーズ画面のボタン */
