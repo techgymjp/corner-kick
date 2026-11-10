@@ -331,6 +331,7 @@ html, body {
   transform: translateY(2px);
 }
 
+/* web-only:start */
 /* Web 版のタイトル・あそびかたに出す Android アプリ(Google Play)へのリンク */
 .storeLink {
   position: absolute;
@@ -362,6 +363,7 @@ html, body {
   right: 16px;
   top: 4%;
 }
+/* web-only:end */
 
 /* ポーズ画面のボタン */
 #pauseMenu {

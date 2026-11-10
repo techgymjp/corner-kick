@@ -1808,13 +1808,16 @@
   $id('howtoBtn').addEventListener('click', () => { audio(); openHowto(); });
   $id('howtoPlay').addEventListener('click', () => { audio(); play(); });
   $id('howtoBack').addEventListener('click', () => { audio(); backFromHowto(); });
-  // Web 版だけ、タイトル・あそびかたに Android アプリ(Google Play)へのリンクを出す(アプリの中では出さない)
+  // web-only:start  Web 版だけ、タイトル・あそびかたに Android アプリ(Google Play)へのリンクを出す。
+  // アプリ用のビルド(npm run build:app)では、この目印の範囲を取り除く(iOS の審査で「隠した機能」と見なされないように)
   const storeLinkEl = $id('storeLink');
   for (const ev of ['pointerdown', 'pointerup']) storeLinkEl.addEventListener(ev, (e) => e.stopPropagation());
+  // web-only:end
   function updateMenus() {
     const t1 = state.phase === 'title' && !adBusy, t2 = state.phase === 'howto' && !adBusy;
     if (t1 === titleMenuEl.hidden) titleMenuEl.hidden = !t1;
     if (t2 === howtoMenuEl.hidden) howtoMenuEl.hidden = !t2;
+    // web-only:start
     const s = !NATIVE && (t1 || t2);
     if (s === storeLinkEl.hidden) storeLinkEl.hidden = !s;
     storeLinkEl.classList.toggle('onTitle', t1);
@@ -1822,6 +1825,7 @@
     // タイトル画面では「あそびかた」ボタンのすぐ下に置く(画面の高さによってボタンの大きさが変わるため)
     const top = t1 ? Math.round(titleMenuEl.offsetTop + titleMenuEl.offsetHeight + 10) + 'px' : '';
     if (storeLinkEl.style.top !== top) storeLinkEl.style.top = top;
+    // web-only:end
   }
 
   // 結果画面の「もう一度」「タイトルへ」ボタン

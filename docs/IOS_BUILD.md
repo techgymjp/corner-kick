@@ -192,6 +192,11 @@ Actions の実行のページの「Summary」に、アップロードしたバ�
 
 ---
 
+## Web 版だけの部分はアプリに入れない(Guideline 5.6)
+
+Web 版にある Google Play へのリンクのように、アプリでは使わない部分が「アプリの中で隠しているだけ」の形でバンドルに入っていると、審査で「審査中に隠した機能」(Guideline 5.6 - Developer Code of Conduct)としてリジェクトされることがあります(techgymjp/chabudai で起きた)。
+このリポジトリでは、Web 版だけの部分を `web-only` の目印で囲み、`npm run build:app`(`ios:sync` / `ios:release` と GitHub Actions が使う)で取り除いています。`play.google.com` などが残っていると、ビルドが止まります。Web 版だけの機能を足すときも、必ず目印で囲んでください。
+
 ## つまずきやすいところ
 
 | 症状 | 対処 |

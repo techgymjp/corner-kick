@@ -20,7 +20,9 @@ window.I18N = (() => {
       'title.name': 'コーナーキック',
       'title.sub': '蹴って、合わせて、ゴールをこじ開けろ!',
       'menu.play': '▶ プレイ', 'menu.howto': 'あそびかた',
+      // web-only:start
       'store.android': '📱 Android アプリ版(Google Play)',
+      // web-only:end
       'title.keys': 'SPACE: プレイ   H: あそびかた   M: 音のオン/オフ   N: ナビ',
       'howto.title': 'あそびかた',
       'howto.a': '① 選手A(10番)がコーナーから蹴る',
@@ -118,7 +120,9 @@ window.I18N = (() => {
       'title.name': 'CORNER KICK',
       'title.sub': 'Whip it in. Meet it. Score!',
       'menu.play': '▶ PLAY', 'menu.howto': 'HOW TO PLAY',
+      // web-only:start
       'store.android': '📱 Get the Android app on Google Play',
+      // web-only:end
       'title.keys': 'SPACE: play   H: how to play   M: sound on/off   N: NAV',
       'howto.title': 'HOW TO PLAY',
       'howto.a': '1. Player A (#10) takes the corner',
