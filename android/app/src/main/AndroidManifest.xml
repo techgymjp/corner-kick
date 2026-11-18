@@ -36,4 +36,8 @@
     <!-- Permissions -->
 
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- 横画面に固定しているが、横画面は必須ではない(縦向きで使う端末・タブレットや Chromebook でも Google Play で入れられるように)。
+         screenOrientation を指定すると Google Play は横画面を必須の機能とみなすため、明示しておく -->
+    <uses-feature android:name="android.hardware.screen.landscape" android:required="false" />
 </manifest>
