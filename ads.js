@@ -26,7 +26,7 @@ window.Ads = (() => {
       // 本番の広告ユニット(AdMob の「コーナーキック」iOS)。空の種類は本番ビルド(App Store 用)では出さない
       production: {
         interstitial: 'ca-app-pub-6411535997477460/2043006026',
-        rewarded: 'ca-app-pub-6411535997477460/4155501804',
+        rewarded: 'ca-app-pub-6411535997477460/2350127785',
         banner: 'ca-app-pub-6411535997477460/4452500764',
       },
     },
